@@ -128,7 +128,8 @@ details[open] summary{margin-bottom:6px}
  <p class="hint">أضف تقارير CRTE سابقة بصيغة Word (.docx). يأخذ التطبيق منها المحطة والموضوع والأشغال ويقترحها عليك، مع الأمثلة السابقة. تبقى محفوظة في هذا الجهاز.</p>
  <div id="imsg"></div>
  <h3>الأمثلة المضافة</h3><div id="ilist"></div>
- <p class="hint" id="icount"></p></aside><button class="mbk" data-menu="0" aria-label="إغلاق"></button></div>
+ <p class="hint" id="icount"></p>
+ <div id="pwaBox"></div></aside><button class="mbk" data-menu="0" aria-label="إغلاق"></button></div>
 <div class="fab"><button data-view="1" title="عرض الملف" aria-label="عرض الملف">👁️</button><button class="p" data-save="1" title="حفظ الملف" aria-label="حفظ الملف">💾</button></div>
 <div id="ov" hidden><div id="ovTop"><button data-close="1" aria-label="إغلاق">✕</button><span>عرض الملف</span><button class="p" data-save="1" aria-label="حفظ الملف">💾</button></div><div id="ovBody"></div></div>
 
@@ -247,7 +248,7 @@ async function importFiles(list){var ok=0,bad=[];
  $("imsg").textContent=(ok?"✅ تمت إضافة "+ok+" ملف\n":"")+(bad.length?"⚠️ لم تتم إضافة:\n"+bad.join("\n"):"")}
 function rList(){var h="";USER.forEach(function(r,i){h+='<div class="ur"><div>'+esc(r.f||r.p)+'<small>'+esc(r.p)+' · '+r.t.length+' أشغال</small></div><button class="d" data-udel="'+i+'">✕</button></div>'});
  $("ilist").innerHTML=h||'<p class="hint">لا توجد أمثلة مضافة بعد.</p>';
- $("icount").textContent="الأمثلة الأساسية: "+DB.length+" تقرير، المضافة: "+USER.length}
+ $("icount").textContent="الأمثلة الأساسية: "+DB.length+" تقرير، المضافة: "+USER.length+" · الإصدار 4"}
 $("fi").addEventListener("change",function(){var fs=Array.prototype.slice.call(this.files);this.value="";importFiles(fs)});
 function msg(t,bad){var m=$("msg");m.textContent=t;m.style.color=bad?"var(--dg)":"var(--mu)"}
 
@@ -302,6 +303,15 @@ async function viewDoc(){
 function closeView(){$("ov").hidden=true;document.body.style.overflow="";$("ovBody").innerHTML=""}
 load();fill();
 if("serviceWorker" in navigator&&/^https?:/.test(location.protocol))window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})});
+(function(){var box=$("pwaBox"),ev=null;
+ box.innerHTML='<h3>التثبيت</h3><button class="p w" id="ib" hidden>📲 تثبيت التطبيق</button><p class="hint" id="il"></p><p class="hint" dir="ltr" id="iu"></p>';
+ $("iu").textContent=location.href;
+ var sa=window.matchMedia&&matchMedia("(display-mode: standalone)").matches;
+ $("il").textContent=sa?"التطبيق يعمل الآن كتطبيق مثبّت.":"يظهر زر التثبيت هنا فقط إذا سمح Chrome بالتثبيت. إن لم يظهر، فالعنوان أدناه يقع داخل نطاق تطبيق منصّب آخر، أو الملفات غير مكتملة.";
+ window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();ev=e;$("ib").hidden=false;$("il").textContent="جاهز للتثبيت."});
+ $("ib").addEventListener("click",function(){if(!ev)return;ev.prompt();ev.userChoice.then(function(){ev=null;$("ib").hidden=true})});
+ window.addEventListener("appinstalled",function(){$("il").textContent="تم التثبيت ✅"});
+})();
 </script>
 </body>
 </html>
