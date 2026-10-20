@@ -248,7 +248,7 @@ async function importFiles(list){var ok=0,bad=[];
  $("imsg").textContent=(ok?"✅ تمت إضافة "+ok+" ملف\n":"")+(bad.length?"⚠️ لم تتم إضافة:\n"+bad.join("\n"):"")}
 function rList(){var h="";USER.forEach(function(r,i){h+='<div class="ur"><div>'+esc(r.f||r.p)+'<small>'+esc(r.p)+' · '+r.t.length+' أشغال</small></div><button class="d" data-udel="'+i+'">✕</button></div>'});
  $("ilist").innerHTML=h||'<p class="hint">لا توجد أمثلة مضافة بعد.</p>';
- $("icount").textContent="الأمثلة الأساسية: "+DB.length+" تقرير، المضافة: "+USER.length+" · الإصدار 4"}
+ $("icount").textContent="الأمثلة الأساسية: "+DB.length+" تقرير، المضافة: "+USER.length+" · الإصدار 5"}
 $("fi").addEventListener("change",function(){var fs=Array.prototype.slice.call(this.files);this.value="";importFiles(fs)});
 function msg(t,bad){var m=$("msg");m.textContent=t;m.style.color=bad?"var(--dg)":"var(--mu)"}
 
@@ -304,12 +304,13 @@ function closeView(){$("ov").hidden=true;document.body.style.overflow="";$("ovBo
 load();fill();
 if("serviceWorker" in navigator&&/^https?:/.test(location.protocol))window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})});
 (function(){var box=$("pwaBox"),ev=null;
- box.innerHTML='<h3>التثبيت</h3><button class="p w" id="ib" hidden>📲 تثبيت التطبيق</button><p class="hint" id="il"></p><p class="hint" dir="ltr" id="iu"></p>';
+ box.innerHTML='<h3>التثبيت والتحديث</h3><button class="p w" id="ib" hidden>📲 تثبيت التطبيق</button><button class="w" id="ub">🔄 تحديث التطبيق إلى آخر نسخة</button><p class="hint" id="il"></p><p class="hint" dir="ltr" id="iu"></p>';
  $("iu").textContent=location.href;
  var sa=window.matchMedia&&matchMedia("(display-mode: standalone)").matches;
  $("il").textContent=sa?"التطبيق يعمل الآن كتطبيق مثبّت.":"يظهر زر التثبيت هنا فقط إذا سمح Chrome بالتثبيت. إن لم يظهر، فالعنوان أدناه يقع داخل نطاق تطبيق منصّب آخر، أو الملفات غير مكتملة.";
  window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();ev=e;$("ib").hidden=false;$("il").textContent="جاهز للتثبيت."});
  $("ib").addEventListener("click",function(){if(!ev)return;ev.prompt();ev.userChoice.then(function(){ev=null;$("ib").hidden=true})});
+ $("ub").addEventListener("click",async function(){$("il").textContent="جاري التحديث…";try{if(window.caches){var ks=await caches.keys();await Promise.all(ks.map(function(k){return caches.delete(k)}))}if(navigator.serviceWorker){var rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(function(r){return r.unregister()}))}}catch(e){}location.reload()});
  window.addEventListener("appinstalled",function(){$("il").textContent="تم التثبيت ✅"});
 })();
 </script>
