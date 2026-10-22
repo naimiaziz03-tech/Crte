@@ -62,8 +62,8 @@ details[open] summary{margin-bottom:6px}
 #ovTop{display:flex;gap:8px;align-items:center;padding:8px 10px;background:var(--card);border-bottom:1px solid var(--bd)}
 #ovTop span{flex:1;font-weight:600}
 #ovTop button{width:42px;height:42px;padding:0;font-size:19px;border-radius:50%}
-#ovBody{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;color:#000;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
-#ovBody .docx-wrapper{padding:10px 0}
+#ovBody{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;direction:ltr;text-align:left;color:#000;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+#ovBody .docx-wrapper{padding:8px 0;direction:ltr;align-items:center}
 .top{position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:5;display:flex;align-items:center;gap:10px;padding:6px 0}
 .top h1{margin:0}
 .mb{width:44px;height:44px;padding:0;font-size:22px;line-height:1;flex:none}
@@ -266,7 +266,7 @@ async function importFiles(list){var ok=0,bad=[];
  $("imsg").textContent=(ok?"✅ تمت إضافة "+ok+" ملف\n":"")+(bad.length?"⚠️ لم تتم إضافة:\n"+bad.join("\n"):"")}
 function rList(){var h="";USER.forEach(function(r,i){h+='<div class="ur"><div>'+esc(r.f||r.p)+'<small>'+esc(r.p)+' · '+r.t.length+' أشغال</small></div><button class="d" data-udel="'+i+'">✕</button></div>'});
  $("ilist").innerHTML=h||'<p class="hint">لا توجد أمثلة مضافة بعد.</p>';
- $("icount").textContent="الأمثلة الأساسية: "+DB.length+" تقرير، المضافة: "+USER.length+" · الإصدار 7"}
+ $("icount").textContent="الأمثلة الأساسية: "+DB.length+" تقرير، المضافة: "+USER.length+" · الإصدار 8"}
 $("fi").addEventListener("change",function(){var fs=Array.prototype.slice.call(this.files);this.value="";importFiles(fs)});
 function msg(t,bad){var m=$("msg");m.textContent=t;m.style.color=bad?"var(--dg)":"var(--mu)"}
 
@@ -328,8 +328,9 @@ async function viewDoc(k){
   if(!window.JSZip||!window.docx)throw new Error("تعذر تحميل مكتبة العرض، تأكد من الاتصال بالإنترنت.");
   var blob=await makeBlob(curDoc);
   await docx.renderAsync(blob,c,null,{className:"docx",inWrapper:true,breakPages:true,useBase64URL:true});
-  var wr=c.querySelector(".docx-wrapper");
-  if(wr){var w=wr.scrollWidth;if(w>c.clientWidth)wr.style.zoom=c.clientWidth/w}
+  var wr=c.querySelector(".docx-wrapper"),sec=c.querySelector("section.docx");
+  if(wr&&sec){var w=sec.offsetWidth+12;if(w>c.clientWidth)wr.style.zoom=c.clientWidth/w}
+  c.scrollLeft=0;c.scrollTop=0;
  }catch(e){c.innerHTML='<p style="color:#fff;padding:16px">'+esc((e&&e.message)||e)+'</p>'}
 }
 function closeView(){$("ov").hidden=true;document.body.style.overflow="";$("ovBody").innerHTML=""}
