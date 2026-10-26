@@ -1,4 +1,4 @@
-var CACHE = "crte-v11";
+var CACHE = "crte-v14";
 var FILES = ["./", "./index.html", "./crte-app.webmanifest", "./icon-crte-192.png", "./icon-crte-512.png"];
 
 self.addEventListener("install", function (e) {
