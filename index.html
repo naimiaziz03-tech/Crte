@@ -106,7 +106,7 @@ select:focus{outline:2px solid var(--pr)}
 .tg button,.tm2 button{padding:11px 0;font-size:16px}
 .tm2{display:flex;gap:8px}.tm2 button{flex:1}
 #objBox[hidden]{display:none}
-</style>
+.plan-fields{display:grid;grid-template-columns:1fr;gap:12px}.plan-field{display:flex;flex-direction:column;gap:6px}.plan-field input{width:100%;box-sizing:border-box;min-height:48px;font-size:16px;padding:12px;border:1px solid var(--line,#2b3645);border-radius:12px;background:var(--input,#111820);color:inherit}</style>
 </head>
 <body>
 <div class="wrap">
@@ -141,9 +141,7 @@ select:focus{outline:2px solid var(--pr)}
   <div class="sg" id="tPool"></div>
  <div class="card"><h2>Définition du plan de contrôle</h2>
   <p class="hint">اختياري: تُكتب البنود في خانة 7 من ورقة التحضير، وإن لم تضف شيئا تبقى بنود الورقة الأصلية كما هي.</p>
-  <div id="plan"></div>
-  <button data-addplan="1">➕ إضافة بند</button>
-  <div class="sg" id="pPool"></div>
+  <div id="plan" class="plan-fields"></div>
  </div>
  <div class="card"><h2>Enregistrements associés</h2>
   <label>Autres ACT N°</label><input id="act" inputmode="numeric" dir="ltr" placeholder="14113">
@@ -192,7 +190,7 @@ var S;
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
 function load(){S=null;try{var r=sessionStorage.getItem(KEY);S=r?JSON.parse(r):null}catch(e){S=null}
- if(!S||!S.tasks||!S.pk)S=defs()}
+ if(!S||!S.tasks||!S.pk)S=defs();if(!Array.isArray(S.plan)||S.plan.length!==2||S.plan.some(function(o){return o&&o.on===undefined}))S.plan=[{t:"",on:true},{t:"",on:true}]}
 function save(){try{sessionStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 var F=["d1","d2","h1","h2","poste","objet","autre","act"];
 $("d1").addEventListener("input",function(){var old=S.d1;if(!S.d2||S.d2===old){S.d2=this.value;$("d2").value=this.value}});
@@ -203,9 +201,12 @@ function dTeam(){var h="";NAMES.forEach(function(n,i){
  h+='<label class="tm"><input type="checkbox" data-pk="'+i+'"'+(S.pk[i]?" checked":"")+'><span dir="ltr">'+esc(n)+'</span></label>'});
  $("team").innerHTML=h}
 function dResp(){var n=["ELYAAGOUBI","HAKKI"],h="";n.forEach(function(x,i){h+='<button data-resp="'+i+'"'+((S.resp||0)===i?' class="p"':'')+'>'+x+'</button>'});$("respBox").innerHTML=h}
-function dPlan(){var h="";(S.plan||[]).forEach(function(o,i){
- h+='<div class="item"><input type="checkbox" data-pi="'+i+'"'+(o.on?" checked":"")+'><input type="text" dir="ltr" data-pt="'+i+'" value="'+esc(o.t)+'"><button class="d" data-pd="'+i+'">✕</button></div>'});
- $("plan").innerHTML=h;rPlanPool()}
+function dPlan(){
+ if(!Array.isArray(S.plan))S.plan=[{t:"",on:true},{t:"",on:true}];
+ S.plan=S.plan.slice(0,2);while(S.plan.length<2)S.plan.push({t:"",on:true});
+ var h="";S.plan.forEach(function(o,i){
+ h+='<div class="plan-field"><label>بند '+(i+1)+'</label><input type="text" dir="auto" data-pt="'+i+'" value="'+esc(o.t||"")+'" placeholder="اكتب بند المراقبة هنا..."></div>'});
+ $("plan").innerHTML=h;$("pPool").innerHTML=""}
 function dTasks(){var h="";S.tasks.forEach(function(o,i){
  h+='<div class="item"><input type="checkbox" data-ti="'+i+'"'+(o.on?" checked":"")+'><input type="text" dir="ltr" data-tt="'+i+'" value="'+esc(o.t)+'"><button class="d" data-td="'+i+'">✕</button></div>'});
  $("tasks").innerHTML=h;rPool()}
@@ -217,11 +218,11 @@ document.addEventListener("click",function(e){
  if(b.getAttribute("data-addfiles")){$("fi").click();return}
  if(b.getAttribute("data-bk")){backupAll();return}
  if(b.getAttribute("data-rs")){$("fr").click();return}
- if(b.getAttribute("data-plall")){PLL.forEach(function(x){S.plan.push({t:x,on:true})});save();dPlan();return}
- var plp=b.getAttribute("data-plp");if(plp!==null){S.plan.push({t:PLL[+plp],on:true});save();dPlan();return}
+ if(b.getAttribute("data-plall")){return}
+ var plp=b.getAttribute("data-plp");if(plp!==null){return}
  var rs_=b.getAttribute("data-resp");if(rs_!==null){S.resp=+rs_;save();dResp();return}
- if(b.getAttribute("data-addplan")){S.plan=S.plan||[];S.plan.push({t:"",on:true});save();dPlan();return}
- var pd_=b.getAttribute("data-pd");if(pd_!==null){S.plan.splice(+pd_,1);save();dPlan();return}
+ if(b.getAttribute("data-addplan")){return}
+ var pd_=b.getAttribute("data-pd");if(pd_!==null){return}
  if(b.getAttribute("data-backup")){doBackup();return}
  if(b.getAttribute("data-restore")){$("bf").click();return}
  if(b.getAttribute("data-libopen")){openLib();return}
@@ -233,7 +234,7 @@ document.addEventListener("click",function(e){
  if(b.getAttribute("data-tall")){TL.forEach(function(x){S.tasks.push({t:x,g:S.tasks.length?S.tasks[S.tasks.length-1].g:0,on:true})});save();dTasks();return}
  var pp=b.getAttribute("data-pp"),ob=b.getAttribute("data-ob"),tp=b.getAttribute("data-tp");
  if(pp!==null){var x=PL[+pp];S.poste=x.p;pickedP=x.p;$("poste").value=x.p;save();showObj();rPost();rObj();syncTasks();return}
- if(ob!==null){var r=OL[+ob];S.objet=r.o;$("objet").value=r.o;S.tasks=r.t.map(function(z){return{t:z,g:0,on:true}});S.auto=exactR().map(function(x){return x.id}).join(",");S.plan=(r.c&&r.c.length)?r.c.map(function(z){return{t:z,on:true}}):[{t:"",on:true},{t:"",on:true}];save();dTasks();dPlan();return}
+ if(ob!==null){var r=OL[+ob];S.objet=r.o;$("objet").value=r.o;S.tasks=r.t.map(function(z){return{t:z,g:0,on:true}});S.auto=exactR().map(function(x){return x.id}).join(",");S.plan=[{t:"",on:true},{t:"",on:true}];save();dTasks();dPlan();return}
  if(tp!==null){S.tasks.push({t:TL[+tp],g:S.tasks.length?S.tasks[S.tasks.length-1].g:0,on:true});save();dTasks();return}
  if(b.getAttribute("data-addtask")){S.tasks.push({t:"",g:S.tasks.length?S.tasks[S.tasks.length-1].g:0,on:true});save();dTasks();return}
  var d=b.getAttribute("data-td");if(d!==null){S.tasks.splice(+d,1);save();dTasks();return}
@@ -242,7 +243,7 @@ document.addEventListener("click",function(e){
  var vw=b.getAttribute("data-view");if(vw){viewDoc();return}
  if(b.getAttribute("data-close"))closeView()});
 $("plan").addEventListener("input",function(e){var i=e.target.getAttribute("data-pt");if(i!==null){S.plan[+i].t=e.target.value;save()}});
-$("plan").addEventListener("change",function(e){var i=e.target.getAttribute("data-pi");if(i!==null){S.plan[+i].on=e.target.checked;save()}});
+
 $("tasks").addEventListener("input",function(e){var i=e.target.getAttribute("data-tt");if(i!==null){S.tasks[+i].t=e.target.value;save()}});
 $("team").addEventListener("change",function(e){var i=e.target.getAttribute("data-pk");if(i!==null){S.pk[+i]=e.target.checked;save()}});
 $("tasks").addEventListener("change",function(e){var i=e.target.getAttribute("data-ti");if(i!==null){S.tasks[+i].on=e.target.checked;save()}});
@@ -283,7 +284,7 @@ function syncTasks(){var rs=exactR();
  if(rs.length){var key=rs.map(function(r){return r.id}).join(",");
   if(S.auto!==key){var seen={},u=[];rs.forEach(function(r){r.t.forEach(function(x){var k=N(x);if(!seen[k]){seen[k]=1;u.push(x)}})});
    S.tasks=u.map(function(x){return{t:x,g:0,on:true}});
-   var sp={},up=[];rs.forEach(function(r){(r.c||[]).forEach(function(x){var k=N(x);if(!sp[k]){sp[k]=1;up.push(x)}})});S.plan=up.length?up.map(function(x){return{t:x,on:true}}):[{t:"",on:true},{t:"",on:true}];
+   S.plan=[{t:"",on:true},{t:"",on:true}];
    S.auto=key;save();dTasks();dPlan();return}}
  else if(S.auto){S.tasks=[];S.plan=[{t:"",on:true},{t:"",on:true}];S.auto="";save();dTasks();dPlan();return}
  rPool()}

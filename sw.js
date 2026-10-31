@@ -1,35 +1,50 @@
-var CACHE = "crte-v20";
-var FILES = ["./", "./index.html", "./crte-app.webmanifest", "./icon-crte-192.png", "./icon-crte-512.png"];
+/* CRTE Service Worker — v22 */
+const CACHE_NAME = 'crte-v22';
+const CORE_FILES = ['./', './index.html'];
+const OPTIONAL_FILES = [
+  './crte-app.webmanifest',
+  './icon-crte-192.png',
+  './icon-crte-512.png'
+];
 
-self.addEventListener("install", function (e) {
-  e.waitUntil(
-    caches.open(CACHE).then(function (c) { return c.addAll(FILES); })
-      .then(function () { return self.skipWaiting(); })
-  );
+self.addEventListener('install', (event) => {
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    // Les fichiers essentiels doivent être mis en cache.
+    await cache.addAll(CORE_FILES);
+    // Les fichiers facultatifs ne doivent pas faire échouer l'installation
+    // s'ils sont absents ou si leur chemin diffère.
+    await Promise.all(OPTIONAL_FILES.map(async (file) => {
+      try { await cache.add(file); } catch (_) {}
+    }));
+    await self.skipWaiting();
+  })());
 });
 
-self.addEventListener("activate", function (e) {
-  e.waitUntil(
-    caches.keys().then(function (keys) {
-      return Promise.all(keys.filter(function (k) { return k !== CACHE; })
-        .map(function (k) { return caches.delete(k); }));
-    }).then(function () { return self.clients.claim(); })
-  );
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)));
+    await self.clients.claim();
+  })());
 });
 
-// يعرض النسخة المحفوظة فورا (تعمل بدون إنترنت) ويحدّثها في الخلفية
-self.addEventListener("fetch", function (e) {
-  var r = e.request;
-  if (r.method !== "GET") return;
-  e.respondWith(
-    caches.open(CACHE).then(function (c) {
-      return c.match(r, { ignoreSearch: true }).then(function (hit) {
-        var net = fetch(r).then(function (res) {
-          if (res && (res.status === 200 || res.type === "opaque")) c.put(r, res.clone());
-          return res;
-        }).catch(function () { return hit; });
-        return hit || net;
-      });
-    })
-  );
+self.addEventListener('fetch', (event) => {
+  const request = event.request;
+  if (request.method !== 'GET' || new URL(request.url).origin !== self.location.origin) return;
+
+  event.respondWith((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    const cached = await cache.match(request, { ignoreSearch: true });
+    try {
+      const response = await fetch(request);
+      if (response && (response.ok || response.type === 'opaque')) {
+        cache.put(request, response.clone()).catch(() => {});
+      }
+      return response;
+    } catch (error) {
+      if (cached) return cached;
+      throw error;
+    }
+  })());
 });
