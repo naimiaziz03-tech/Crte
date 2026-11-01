@@ -109,8 +109,13 @@ select:focus{outline:2px solid var(--pr)}
 .plan-fields{display:grid;grid-template-columns:1fr;gap:12px}.plan-field{display:flex;flex-direction:column;gap:6px}.plan-field input{width:100%;box-sizing:border-box;min-height:48px;font-size:16px;padding:12px;border:1px solid var(--bd);border-radius:12px;background:var(--bg);color:var(--tx)}
 .item .move-handle{flex:none;width:30px;text-align:center;color:var(--mu);font-size:20px;cursor:grab;touch-action:none;padding:2px 0}.item .move-btn{flex:none;padding:5px 9px;min-width:36px;background:var(--card);color:var(--tx)}.item .move-btn:disabled{opacity:.35;cursor:default}.item.dragging{opacity:.45}.item.drop-target{outline:2px dashed var(--pr);outline-offset:2px}.plan-field input{background:var(--bg);color:var(--tx);border-color:var(--bd)}
 .tasks-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}.tasks-head h2{margin:0}.task-menu-wrap{position:relative}.task-more{width:42px;height:38px;padding:0;font-size:24px;line-height:1}.task-menu{position:absolute;top:42px;left:0;z-index:8;min-width:190px;padding:6px;background:var(--card);border:1px solid var(--bd);border-radius:10px;box-shadow:0 6px 20px #0002}.task-menu[hidden]{display:none}.task-menu button{width:100%;text-align:right;padding:10px}.item .move-btn,.item .move-handle{display:none}.reorder-mode .item .move-btn{display:inline-block}.reorder-mode .item .move-handle{display:inline-block}
+
+<style id="crte-error-style">#crteFatalError{display:none;position:fixed;z-index:999999;inset:0;background:#fff;color:#111;padding:24px;font:16px/1.6 sans-serif;direction:rtl;overflow:auto}#crteFatalError pre{white-space:pre-wrap;overflow-wrap:anywhere;color:#a11}</style>
 </head>
 <body>
+<div id="crteFatalError"><h2>تعذر تشغيل التطبيق</h2><p>وقع خطأ أثناء تشغيل الواجهة. صوّر هذه الرسالة وأرسلها للمساعدة.</p><pre id="crteFatalText"></pre><button onclick="location.reload()">إعادة المحاولة</button></div>
+<script>window.addEventListener("error",function(e){var p=document.getElementById("crteFatalError"),t=document.getElementById("crteFatalText");if(p&&t){t.textContent=(e.message||"JavaScript error")+(e.filename?"\n"+e.filename+":"+e.lineno:" ");p.style.display="block";}});window.addEventListener("unhandledrejection",function(e){var p=document.getElementById("crteFatalError"),t=document.getElementById("crteFatalText");if(p&&t){t.textContent=String(e.reason&&e.reason.stack||e.reason||"Promise error");p.style.display="block";}});</script>
+
 <div class="wrap">
  <div class="top"><button class="mb" data-menu="1" aria-label="القائمة">☰</button><h1>⚡ تقرير الأشغال والاختبارات (CRTE)</h1></div>
  <div style="margin:8px 0 12px"><button type="button" id="undoEdit" class="w" disabled>↶ رجوع لآخر خطوة قبل التعديل</button><small id="undoInfo" class="hint">يمكنك التراجع عن آخر تعديل دون فقدان باقي المدخلات.</small></div>
@@ -142,6 +147,7 @@ select:focus{outline:2px solid var(--pr)}
   <div id="tasks"></div>
   <button data-addtask="1">➕ إضافة شغل</button>
   <div class="sg" id="tPool"></div>
+ </div>
  <div class="card"><h2>Définition du plan de contrôle</h2>
   <p class="hint">اختياري: تُكتب البنود في خانة 7 من ورقة التحضير، وإن لم تضف شيئا تبقى بنود الورقة الأصلية كما هي.</p>
   <div id="plan" class="plan-fields"></div>
@@ -210,7 +216,7 @@ function dPlan(){
  S.plan=S.plan.slice(0,2);while(S.plan.length<2)S.plan.push({t:"",on:true});
  var h="";S.plan.forEach(function(o,i){
  h+='<div class="plan-field"><label>بند '+(i+1)+'</label><input type="text" dir="auto" data-pt="'+i+'" value="'+esc(o.t||"")+'" placeholder="اكتب بند المراقبة هنا..."></div>'});
- $("plan").innerHTML=h;$("pPool").innerHTML=""}
+ $("plan").innerHTML=h;if($("pPool"))$("pPool").innerHTML=""}
 var reorderMode=false;
 function dTasks(){var h="";S.tasks.forEach(function(o,i){
  h+='<div class="item" data-taskrow="'+i+'"><button type="button" class="move-handle" data-drag="'+i+'" draggable="true" aria-label="تحريك الشغل" title="اسحب لترتيب الشغل">⋮⋮</button><input type="checkbox" data-ti="'+i+'"'+(o.on?" checked":"")+'><input type="text" dir="ltr" data-tt="'+i+'" value="'+esc(o.t)+'" aria-label="الشغل '+(i+1)+'"><button type="button" class="move-btn" data-up="'+i+'"'+(i===0?' disabled':'')+' aria-label="تحريك للأعلى" title="تحريك للأعلى">↑</button><button type="button" class="move-btn" data-down="'+i+'"'+(i===S.tasks.length-1?' disabled':'')+' aria-label="تحريك للأسفل" title="تحريك للأسفل">↓</button><button type="button" class="d" data-td="'+i+'" aria-label="حذف الشغل">✕</button></div>'});
@@ -307,7 +313,7 @@ function rPlanPool(){var h="",seen={},have={},ex=exactR();PLL=[];
  if(ex.length){var pk=N(S.poste);(S.plan||[]).forEach(function(o){if(o.t.trim())have[N(o.t)]=1});
   allDB().forEach(function(r){if(N(r.p)===pk)(r.c||[]).forEach(function(x){var k=N(x);if(!seen[k]&&!have[k]){seen[k]=1;PLL.push(x)}})})}
  if(PLL.length){h='<div class="sh">بنود خطة المراقبة لنفس المحطة، اضغط لإضافتها</div><button data-plall="1">➕ إضافة كل البنود ('+PLL.length+')</button>';PLL.forEach(function(x,i){h+='<button data-plp="'+i+'">➕ '+esc(x)+'</button>'})}
- $("pPool").innerHTML=h}
+ if($("pPool"))$("pPool").innerHTML=h}
 function rPool(){var h="",seen={},have={},ex=exactR();TL=[];
  if(ex.length){var pk=N(S.poste),exid={};ex.forEach(function(r){exid[r.id]=1});
   S.tasks.forEach(function(o){have[N(o.t)]=1});
