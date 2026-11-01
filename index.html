@@ -107,11 +107,13 @@ select:focus{outline:2px solid var(--pr)}
 .tm2{display:flex;gap:8px}.tm2 button{flex:1}
 #objBox[hidden]{display:none}
 .plan-fields{display:grid;grid-template-columns:1fr;gap:12px}.plan-field{display:flex;flex-direction:column;gap:6px}.plan-field input{width:100%;box-sizing:border-box;min-height:48px;font-size:16px;padding:12px;border:1px solid var(--bd);border-radius:12px;background:var(--bg);color:var(--tx)}
-.item .move-handle{flex:none;width:30px;text-align:center;color:var(--mu);font-size:20px;cursor:grab;touch-action:none;padding:2px 0}.item .move-btn{flex:none;padding:5px 9px;min-width:36px;background:var(--card);color:var(--tx)}.item .move-btn:disabled{opacity:.35;cursor:default}.item.dragging{opacity:.45}.item.drop-target{outline:2px dashed var(--pr);outline-offset:2px}.plan-field input{background:var(--bg);color:var(--tx);border-color:var(--bd)}</style>
+.item .move-handle{flex:none;width:30px;text-align:center;color:var(--mu);font-size:20px;cursor:grab;touch-action:none;padding:2px 0}.item .move-btn{flex:none;padding:5px 9px;min-width:36px;background:var(--card);color:var(--tx)}.item .move-btn:disabled{opacity:.35;cursor:default}.item.dragging{opacity:.45}.item.drop-target{outline:2px dashed var(--pr);outline-offset:2px}.plan-field input{background:var(--bg);color:var(--tx);border-color:var(--bd)}
+.tasks-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}.tasks-head h2{margin:0}.task-menu-wrap{position:relative}.task-more{width:42px;height:38px;padding:0;font-size:24px;line-height:1}.task-menu{position:absolute;top:42px;left:0;z-index:8;min-width:190px;padding:6px;background:var(--card);border:1px solid var(--bd);border-radius:10px;box-shadow:0 6px 20px #0002}.task-menu[hidden]{display:none}.task-menu button{width:100%;text-align:right;padding:10px}.item .move-btn,.item .move-handle{display:none}.reorder-mode .item .move-btn{display:inline-block}.reorder-mode .item .move-handle{display:inline-block}
 </head>
 <body>
 <div class="wrap">
  <div class="top"><button class="mb" data-menu="1" aria-label="القائمة">☰</button><h1>⚡ تقرير الأشغال والاختبارات (CRTE)</h1></div>
+ <div style="margin:8px 0 12px"><button type="button" id="undoEdit" class="w" disabled>↶ رجوع لآخر خطوة قبل التعديل</button><small id="undoInfo" class="hint">يمكنك التراجع عن آخر تعديل دون فقدان باقي المدخلات.</small></div>
  <p class="sub">أدخل المعلومات مرة واحدة، فتُملأ الوثيقتان معا (تقرير CRTE ثم ورقة التحضير) وتُحفظان في ملف Word واحد، والترويسة نفسها في أعلى كل صفحة.</p>
 
  <div class="card"><h2>التاريخ والتوقيت</h2>
@@ -124,7 +126,7 @@ select:focus{outline:2px solid var(--pr)}
  <div class="card"><h2>المحطة والموضوع</h2>
   <label>Poste</label><input id="poste" dir="ltr" autocomplete="off" placeholder="60/22 kV ALHOUCEIMA">
   <div class="sg" id="pSug"></div>
-  <div id="objBox" hidden><label>Objet</label><textarea id="objet" dir="ltr" placeholder="VTII du travée + C.SF6 du disjoncteur D554 IMZOUREN"></textarea>
+  <div id="objBox" hidden><div class="row" style="align-items:center;justify-content:space-between"><label for="objet">Objet</label><button type="button" id="clearObjet" class="d" style="width:auto;padding:7px 10px">✖ حذف Objet فقط</button></div><textarea id="objet" dir="ltr" placeholder="VTII du travée + C.SF6 du disjoncteur D554 IMZOUREN"></textarea>
   <div class="sg" id="oSug"></div></div>
  </div>
 
@@ -135,7 +137,7 @@ select:focus{outline:2px solid var(--pr)}
   <details id="autreBox"><summary>اسم رابع (Autre)</summary><input type="text" dir="ltr" id="autre" placeholder="اكتب الاسم هنا (اختياري)"></details>
  </div>
 
- <div class="card"><h2>الأشغال والاختبارات</h2>
+ <div class="card" id="tasksCard"><div class="tasks-head"><h2>الأشغال والاختبارات</h2><div class="task-menu-wrap"><button type="button" id="taskMore" class="task-more" aria-label="خيارات البنود" aria-expanded="false">⋮</button><div id="taskMenu" class="task-menu" hidden><button type="button" id="toggleReorder">↕️ تعديل ترتيب البنود</button></div></div></div>
   <p class="hint">تُعرض الأشغال تلقائيا عندما يتطابق Poste وObjet معا مع مرجع سابق، وإلا تبقى القائمة فارغة. فعّل المنجز منها، وعدّل النص أو أضف أشغالا أخرى.</p>
   <div id="tasks"></div>
   <button data-addtask="1">➕ إضافة شغل</button>
@@ -209,9 +211,12 @@ function dPlan(){
  var h="";S.plan.forEach(function(o,i){
  h+='<div class="plan-field"><label>بند '+(i+1)+'</label><input type="text" dir="auto" data-pt="'+i+'" value="'+esc(o.t||"")+'" placeholder="اكتب بند المراقبة هنا..."></div>'});
  $("plan").innerHTML=h;$("pPool").innerHTML=""}
+var reorderMode=false;
 function dTasks(){var h="";S.tasks.forEach(function(o,i){
  h+='<div class="item" data-taskrow="'+i+'"><button type="button" class="move-handle" data-drag="'+i+'" draggable="true" aria-label="تحريك الشغل" title="اسحب لترتيب الشغل">⋮⋮</button><input type="checkbox" data-ti="'+i+'"'+(o.on?" checked":"")+'><input type="text" dir="ltr" data-tt="'+i+'" value="'+esc(o.t)+'" aria-label="الشغل '+(i+1)+'"><button type="button" class="move-btn" data-up="'+i+'"'+(i===0?' disabled':'')+' aria-label="تحريك للأعلى" title="تحريك للأعلى">↑</button><button type="button" class="move-btn" data-down="'+i+'"'+(i===S.tasks.length-1?' disabled':'')+' aria-label="تحريك للأسفل" title="تحريك للأسفل">↓</button><button type="button" class="d" data-td="'+i+'" aria-label="حذف الشغل">✕</button></div>'});
- $("tasks").innerHTML=h;rPool()}
+ $("tasks").innerHTML=h;rPool();document.getElementById("tasksCard").classList.toggle("reorder-mode",reorderMode)}
+document.getElementById("taskMore").addEventListener("click",function(){var m=document.getElementById("taskMenu");m.hidden=!m.hidden;this.setAttribute("aria-expanded",String(!m.hidden))});
+document.getElementById("toggleReorder").addEventListener("click",function(){reorderMode=!reorderMode;document.getElementById("tasksCard").classList.toggle("reorder-mode",reorderMode);document.getElementById("taskMenu").hidden=true;document.getElementById("taskMore").setAttribute("aria-expanded","false");this.textContent=reorderMode?"✓ إنهاء تعديل الترتيب":"↕️ تعديل ترتيب البنود";if(reorderMode)msg("استعمل السهم ↑ للصعود والسهم ↓ للنزول، ثم اضغط ⋮ لإنهاء الترتيب.");else msg("تم إنهاء تعديل ترتيب البنود.")});
 document.addEventListener("click",function(e){
  var t=e.target;
  var b=t.closest?t.closest("button"):null;if(!b)return;
@@ -494,6 +499,23 @@ if("serviceWorker" in navigator&&/^https?:/.test(location.protocol))window.addEv
  if(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform())$("il").textContent="تطبيق أندرويد أصلي، يتحدث تلقائيا من الإنترنت.";
  window.addEventListener("appinstalled",function(){$("il").textContent="تم التثبيت ✅"});
 })();
+
+// Undo history: keep previous form states locally so edits can be reverted safely.
+(function(){
+ var UNDO_KEY="crte_form_undo_v1", stack=[];
+ try { var saved=JSON.parse(localStorage.getItem(UNDO_KEY)||"[]"); if(Array.isArray(saved))stack=saved.slice(-30); } catch(e){}
+ function persist(){try{localStorage.setItem(UNDO_KEY,JSON.stringify(stack.slice(-30)))}catch(e){}}
+ function cloneState(){try{return JSON.parse(JSON.stringify(S))}catch(e){return null}}
+ function same(a,b){try{return JSON.stringify(a)===JSON.stringify(b)}catch(e){return false}}
+ function push(){var c=cloneState();if(!c)return;if(stack.length&&same(stack[stack.length-1],c))return;stack.push(c);if(stack.length>30)stack.shift();persist();refresh()}
+ function refresh(){var b=document.getElementById("undoEdit");if(b)b.disabled=!stack.length;var i=document.getElementById("undoInfo");if(i)i.textContent=stack.length?"يمكن الرجوع عن آخر "+stack.length+" تعديل(ات).":"ما كاين حتى تعديل سابق للرجوع إليه."}
+ document.addEventListener("input",function(e){var t=e.target;if(t&&t.matches&&t.matches("input,textarea,select"))push()},true);
+ document.addEventListener("click",function(e){var b=e.target&&e.target.closest?e.target.closest("button"):null;if(!b||b.id==="undoEdit"||b.id==="clearObjet"||b.matches("[data-reset]"))return;push()},true);
+ document.getElementById("undoEdit").addEventListener("click",function(){if(!stack.length)return;S=stack.pop();persist();save();fill();showObj();rPost();rObj();syncTasks();refresh();msg("↶ تم التراجع عن آخر تعديل مع الاحتفاظ بباقي المدخلات.")});
+ document.getElementById("clearObjet").addEventListener("click",function(){if(!confirm("حذف نص Objet فقط؟ ستبقى الأشغال والمدخلات الأخرى كما هي."))return;push();S.objet="";S.auto="";document.getElementById("objet").value="";save();showObj();rObj();rPool();rPlanPool();msg("تم حذف Objet فقط، وبقيت الأشغال وباقي المدخلات محفوظة.")});
+ refresh();
+})();
+
 </script>
 </body>
 </html>
