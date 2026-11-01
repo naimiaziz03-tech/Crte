@@ -106,7 +106,8 @@ select:focus{outline:2px solid var(--pr)}
 .tg button,.tm2 button{padding:11px 0;font-size:16px}
 .tm2{display:flex;gap:8px}.tm2 button{flex:1}
 #objBox[hidden]{display:none}
-.plan-fields{display:grid;grid-template-columns:1fr;gap:12px}.plan-field{display:flex;flex-direction:column;gap:6px}.plan-field input{width:100%;box-sizing:border-box;min-height:48px;font-size:16px;padding:12px;border:1px solid var(--line,#2b3645);border-radius:12px;background:var(--input,#111820);color:inherit}</style>
+.plan-fields{display:grid;grid-template-columns:1fr;gap:12px}.plan-field{display:flex;flex-direction:column;gap:6px}.plan-field input{width:100%;box-sizing:border-box;min-height:48px;font-size:16px;padding:12px;border:1px solid var(--bd);border-radius:12px;background:var(--bg);color:var(--tx)}
+.item .move-handle{flex:none;width:30px;text-align:center;color:var(--mu);font-size:20px;cursor:grab;touch-action:none;padding:2px 0}.item .move-btn{flex:none;padding:5px 9px;min-width:36px;background:var(--card);color:var(--tx)}.item .move-btn:disabled{opacity:.35;cursor:default}.item.dragging{opacity:.45}.item.drop-target{outline:2px dashed var(--pr);outline-offset:2px}.plan-field input{background:var(--bg);color:var(--tx);border-color:var(--bd)}</style>
 </head>
 <body>
 <div class="wrap">
@@ -181,7 +182,8 @@ var PLAN_PAT="<w:p><w:pPr><w:pStyle w:val=\"Normal\"/><w:numPr><w:ilvl w:val=\"0
 var ORIG={"resp": "EL YAAGOUBI", "d0": "17/04/2026", "obj": "Mesure d’isolement TR1 225 /60/11kv N°1 + CSF6 25T1 ET T1", "d1": "18/04/2026", "h1": "09H00", "h2": "15H00", "poste": "225/60 kV de TAZA II", "team": "HAKKI - JAGHMOUM – MORHLI - NAIMI", "tasks": ["Contrôle état général du TR 225/60/11kV N°1 + TSA N°1", "Déconnexion de la barre en cuivre 11kv", "Déconnexion du tube en cuivre du neutre 225kV et 60kV", "Déconnection des câbles 60 kV", "Déconnexion du parafoudre 225kV + câble masse cuve", "Contrôle d’isolement du TR 225/60/11kV N°1", "Essais et vérification du pompes et ventilateur + régleur", "Contrôle du gaz SF6 des disjoncteurs T1 et 25T1", "Connexion toutes les liaisons du TR1 225 /60/11kv N°1 et Contrôlé Serrage", "Essais alarme/déclenchement  des disjoncteurs T1 et 25T1", "Essais fermeture/ouverture à distance et en Local T1 et 25T1"], "plan": ["Contrôle état général du TR 225/60/11kV N°1 + TSA N°1", "Essais alarme/déclenchement  des disjoncteurs T1 et 25T1"], "act": "14113"};
 var PREP_ORIG={"HH1": "09H00", "HH2": "15H00", "OBJ": "Mesure d’isolement TR1 225 /60/11kv N°1 + CSF6 25T1 ET T1", "POSTE": "225/60 kV de TAZA II", "TEAM": "HAKKI - JAGHMOUM – MORHLI - NAIMI ", "RESPONSABLE": "EL YAAGOUBI"};
 var curDoc="crte";
-var KEY="crte_d554_v6";
+var KEY="crte_d554_v7";
+var LEGACY_KEY="crte_d554_v6";
 var NAMES=["NAIMI Aziz","JAGHMOUM Jaouad","MORHLI Mouad"];
 function today(){var d=new Date();return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2)}
 function defs(){return{d1:today(),d2:today(),h1:"",h2:"",crte:"",poste:"",objet:"",obs:"",autre:"",pk:[true,true,true],auto:"",resp:0,plan:[{t:"",on:true},{t:"",on:true}],act:"",
@@ -189,9 +191,9 @@ function defs(){return{d1:today(),d2:today(),h1:"",h2:"",crte:"",poste:"",objet:
 var S;
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
-function load(){S=null;try{var r=sessionStorage.getItem(KEY);S=r?JSON.parse(r):null}catch(e){S=null}
+function load(){S=null;try{var r=localStorage.getItem(KEY);if(!r){r=localStorage.getItem(LEGACY_KEY);if(!r)r=sessionStorage.getItem(LEGACY_KEY);if(r)localStorage.setItem(KEY,r)}S=r?JSON.parse(r):null}catch(e){S=null}
  if(!S||!S.tasks||!S.pk)S=defs();if(!Array.isArray(S.plan)||S.plan.length!==2||S.plan.some(function(o){return o&&o.on===undefined}))S.plan=[{t:"",on:true},{t:"",on:true}]}
-function save(){try{sessionStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){try{sessionStorage.setItem(KEY,JSON.stringify(S))}catch(_){}}}
 var F=["d1","d2","h1","h2","poste","objet","autre","act"];
 $("d1").addEventListener("input",function(){var old=S.d1;if(!S.d2||S.d2===old){S.d2=this.value;$("d2").value=this.value}});
 F.forEach(function(k){$(k).addEventListener("input",function(){S[k]=this.value;save()})});
@@ -208,7 +210,7 @@ function dPlan(){
  h+='<div class="plan-field"><label>بند '+(i+1)+'</label><input type="text" dir="auto" data-pt="'+i+'" value="'+esc(o.t||"")+'" placeholder="اكتب بند المراقبة هنا..."></div>'});
  $("plan").innerHTML=h;$("pPool").innerHTML=""}
 function dTasks(){var h="";S.tasks.forEach(function(o,i){
- h+='<div class="item"><input type="checkbox" data-ti="'+i+'"'+(o.on?" checked":"")+'><input type="text" dir="ltr" data-tt="'+i+'" value="'+esc(o.t)+'"><button class="d" data-td="'+i+'">✕</button></div>'});
+ h+='<div class="item" data-taskrow="'+i+'"><button type="button" class="move-handle" data-drag="'+i+'" draggable="true" aria-label="تحريك الشغل" title="اسحب لترتيب الشغل">⋮⋮</button><input type="checkbox" data-ti="'+i+'"'+(o.on?" checked":"")+'><input type="text" dir="ltr" data-tt="'+i+'" value="'+esc(o.t)+'" aria-label="الشغل '+(i+1)+'"><button type="button" class="move-btn" data-up="'+i+'"'+(i===0?' disabled':'')+' aria-label="تحريك للأعلى" title="تحريك للأعلى">↑</button><button type="button" class="move-btn" data-down="'+i+'"'+(i===S.tasks.length-1?' disabled':'')+' aria-label="تحريك للأسفل" title="تحريك للأسفل">↓</button><button type="button" class="d" data-td="'+i+'" aria-label="حذف الشغل">✕</button></div>'});
  $("tasks").innerHTML=h;rPool()}
 document.addEventListener("click",function(e){
  var t=e.target;
@@ -237,6 +239,8 @@ document.addEventListener("click",function(e){
  if(ob!==null){var r=OL[+ob];S.objet=r.o;$("objet").value=r.o;S.tasks=r.t.map(function(z){return{t:z,g:0,on:true}});S.auto=exactR().map(function(x){return x.id}).join(",");S.plan=[{t:"",on:true},{t:"",on:true}];save();dTasks();dPlan();return}
  if(tp!==null){S.tasks.push({t:TL[+tp],g:S.tasks.length?S.tasks[S.tasks.length-1].g:0,on:true});save();dTasks();return}
  if(b.getAttribute("data-addtask")){S.tasks.push({t:"",g:S.tasks.length?S.tasks[S.tasks.length-1].g:0,on:true});save();dTasks();return}
+ var up=b.getAttribute("data-up");if(up!==null){var ui=+up;if(ui>0){var tmp=S.tasks[ui-1];S.tasks[ui-1]=S.tasks[ui];S.tasks[ui]=tmp;save();dTasks()}return}
+ var down=b.getAttribute("data-down");if(down!==null){var di=+down;if(di<S.tasks.length-1){var tmp2=S.tasks[di+1];S.tasks[di+1]=S.tasks[di];S.tasks[di]=tmp2;save();dTasks()}return}
  var d=b.getAttribute("data-td");if(d!==null){S.tasks.splice(+d,1);save();dTasks();return}
  if(b.getAttribute("data-reset")){if(!confirm("مسح كل الإدخال وبدء تقرير جديد؟"))return;S=defs();save();fill();window.scrollTo(0,0);return}
  var sv=b.getAttribute("data-save");if(sv){saveDoc();return}
@@ -245,6 +249,11 @@ document.addEventListener("click",function(e){
 $("plan").addEventListener("input",function(e){var i=e.target.getAttribute("data-pt");if(i!==null){S.plan[+i].t=e.target.value;save()}});
 
 $("tasks").addEventListener("input",function(e){var i=e.target.getAttribute("data-tt");if(i!==null){S.tasks[+i].t=e.target.value;save()}});
+var draggedTask=-1;
+$("tasks").addEventListener("dragstart",function(e){var h=e.target.closest?e.target.closest("[data-drag]"):null;if(!h)return;draggedTask=+h.getAttribute("data-drag");var row=h.closest(".item");if(row)row.classList.add("dragging");try{e.dataTransfer.setData("text/plain",String(draggedTask));e.dataTransfer.effectAllowed="move"}catch(_){}});
+$("tasks").addEventListener("dragover",function(e){var row=e.target.closest?e.target.closest("[data-taskrow]"):null;if(!row||draggedTask<0)return;e.preventDefault();document.querySelectorAll("#tasks .drop-target").forEach(function(x){x.classList.remove("drop-target")});row.classList.add("drop-target")});
+$("tasks").addEventListener("drop",function(e){var row=e.target.closest?e.target.closest("[data-taskrow]"):null;if(!row||draggedTask<0)return;e.preventDefault();var to=+row.getAttribute("data-taskrow");if(to!==draggedTask){var moved=S.tasks.splice(draggedTask,1)[0];S.tasks.splice(to,0,moved);save();dTasks()}draggedTask=-1});
+$("tasks").addEventListener("dragend",function(){draggedTask=-1;document.querySelectorAll("#tasks .dragging,#tasks .drop-target").forEach(function(x){x.classList.remove("dragging","drop-target")})});
 $("team").addEventListener("change",function(e){var i=e.target.getAttribute("data-pk");if(i!==null){S.pk[+i]=e.target.checked;save()}});
 $("tasks").addEventListener("change",function(e){var i=e.target.getAttribute("data-ti");if(i!==null){S.tasks[+i].on=e.target.checked;save()}});
 
