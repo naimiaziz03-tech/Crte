@@ -189,20 +189,9 @@ function defs(){return{d1:today(),d2:today(),h1:"",h2:"",crte:"",poste:"",objet:
 var S;
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
-function load(){S=null;var raw=null,fromSession=false;
- try{raw=localStorage.getItem(KEY)}catch(e){}
- if(!raw){try{raw=sessionStorage.getItem(KEY);fromSession=!!raw}catch(e){}}
- try{S=raw?JSON.parse(raw):null}catch(e){S=null}
- if(!S||typeof S!=="object"||Array.isArray(S))S=defs();
- var d=defs();Object.keys(d).forEach(function(k){if(S[k]===undefined)S[k]=d[k]});
- if(!Array.isArray(S.tasks))S.tasks=[];
- if(!Array.isArray(S.pk))S.pk=[true,true,true];
- while(S.pk.length<3)S.pk.push(true);
- if(!Array.isArray(S.plan))S.plan=d.plan;
- if(fromSession)save();
-}
-function save(){var raw;try{raw=JSON.stringify(S);localStorage.setItem(KEY,raw);try{sessionStorage.setItem(KEY,raw)}catch(e){}return true}
- catch(e){try{sessionStorage.setItem(KEY,JSON.stringify(S))}catch(x){}return false}}
+function load(){S=null;try{var r=sessionStorage.getItem(KEY);S=r?JSON.parse(r):null}catch(e){S=null}
+ if(!S||!S.tasks||!S.pk)S=defs();if(!Array.isArray(S.plan)||S.plan.length!==2||S.plan.some(function(o){return o&&o.on===undefined}))S.plan=[{t:"",on:true},{t:"",on:true}]}
+function save(){try{sessionStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 var F=["d1","d2","h1","h2","poste","objet","autre","act"];
 $("d1").addEventListener("input",function(){var old=S.d1;if(!S.d2||S.d2===old){S.d2=this.value;$("d2").value=this.value}});
 F.forEach(function(k){$(k).addEventListener("input",function(){S[k]=this.value;save()})});
@@ -297,11 +286,7 @@ function syncTasks(){var rs=exactR();
    S.tasks=u.map(function(x){return{t:x,g:0,on:true}});
    S.plan=[{t:"",on:true},{t:"",on:true}];
    S.auto=key;save();dTasks();dPlan();return}}
- else if(S.auto){
-  // Keep manually entered work and tests when the current station/object no longer matches a library record.
-  // Only clear the automatic-match marker; never erase the user's task list or inspection plan.
-  S.auto="";save();
- }
+ else if(S.auto){S.tasks=[];S.plan=[{t:"",on:true},{t:"",on:true}];S.auto="";save();dTasks();dPlan();return}
  rPool()}
 var PLL=[];
 function rPlanPool(){var h="",seen={},have={},ex=exactR();PLL=[];
