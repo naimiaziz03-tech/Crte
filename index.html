@@ -259,7 +259,7 @@ function dPlan(){
  });
  $("plan").innerHTML=h;
  // لا تعرض اقتراحات أو اختيارات تحت هاتين الخانتين.
- $("pPool").innerHTML="";
+ if($("pPool"))$("pPool").innerHTML="";
 }
 function dTasks(){
  // قائمة الأشغال مستقلة عن حقلي Poste وObjet؛ لا تُخفى عند تغيّر المطابقة.
@@ -375,7 +375,7 @@ var PLL=[];
 function rPlanPool(){
  // تعطيل اقتراحات المكتبة في خطة المراقبة: المطلوب خانتان بإدخال حر فقط.
  PLL=[];
- $("pPool").innerHTML="";
+ if($("pPool"))$("pPool").innerHTML="";
 }
 function rPool(){var h="",seen={},have={},ex=exactR();TL=[];
  if(ex.length){var pk=N(S.poste),exid={};ex.forEach(function(r){exid[r.id]=1});
@@ -532,7 +532,20 @@ async function makeBlob(){
  var xml=await z.file("word/document.xml").async("string");
  z.file("word/document.xml",build(build2(xml)));
  return z.generateAsync({type:"blob",compression:"DEFLATE",mimeType:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"})}
-function fname(){return "CRTE_Fiche_"+(S.d1||new Date().toISOString().slice(0,10))+".docx"}
+function fname(){
+ // اسم الملف حسب تاريخ التقرير: DD-MM-YYYY
+ var raw=(S.d1||"").trim(),d;
+ if(/^\d{4}-\d{2}-\d{2}$/.test(raw)){
+  var a=raw.split("-");d=new Date(Number(a[0]),Number(a[1])-1,Number(a[2]));
+ }else if(/^\d{2}\/\d{2}\/\d{4}$/.test(raw)){
+  var b=raw.split("/");d=new Date(Number(b[2]),Number(b[1])-1,Number(b[0]));
+ }else d=new Date();
+ if(isNaN(d.getTime()))d=new Date();
+ var jj=("0"+d.getDate()).slice(-2);
+ var mm=("0"+(d.getMonth()+1)).slice(-2);
+ var yyyy=d.getFullYear();
+ return "Preparation et Compte rendu "+jj+"-"+mm+"-"+yyyy+".docx";
+}
 async function outFile(blob,nm){
  // تنزيل مباشر من المتصفح لتفادي خطأ Library file not found.
  var u=URL.createObjectURL(blob),an=document.createElement("a");
@@ -616,7 +629,7 @@ function closeView(){layerClose("view")}
   var panel=document.createElement("div");
   panel.dir="rtl";
   panel.style.cssText="margin:16px;padding:18px;border:1px solid #d97706;border-radius:12px;background:#fff7ed;color:#7c2d12;font:16px sans-serif;line-height:1.8";
-  panel.innerHTML="<b>تعذر تشغيل واجهة CRTE بشكل كامل.</b><br>لم يتم حذف البيانات المحفوظة. حدّث الصفحة، وإذا استمر المشكل أرسل صورة لهذه الرسالة.";
+  panel.innerHTML="<b>تعذر تشغيل جزء من واجهة CRTE.</b><br>لم يتم حذف البيانات المحفوظة. السبب التقني: "+String((bootError&&bootError.message)||bootError)+"<br>يمكنك تحديث الصفحة أو إرسال هذه الرسالة للدعم.";
   root.insertBefore(panel,root.firstChild);
  }
 }
