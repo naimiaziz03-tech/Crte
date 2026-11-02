@@ -191,29 +191,34 @@ function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
 function load(){
  S=null;
- // التخزين الدائم هو المصدر الأساسي. ننقل بيانات الجلسة القديمة تلقائياً
- // لأول مرة فقط، دون المساس بملفات المرجعية crte_lib_v2.
- try{
-  var r=localStorage.getItem(KEY);
-  if(r){S=JSON.parse(r)}
-  else{
-   var old=sessionStorage.getItem(KEY);
-   if(old){S=JSON.parse(old);localStorage.setItem(KEY,JSON.stringify(S));}
-  }
- }catch(e){S=null}
- if(!S||!S.tasks||!S.pk)S=defs();
- if(!Array.isArray(S.plan)||S.plan.length!==2||S.plan.some(function(o){return o&&o.on===undefined}))S.plan=[{t:"",on:true},{t:"",on:true}];
+ // استرجاع آمن من المفتاح الحالي أو من الإصدارات السابقة دون الكتابة فوق بيانات موجودة.
+ var keys=[KEY,"crte_d554_v5","crte_d554_v4","crte_d554_v3","crte_d554_v2","crte_d554_v1",KEY+"_backup"];
+ for(var i=0;i<keys.length&&!S;i++){
+  try{
+   var raw=localStorage.getItem(keys[i]);
+   if(raw){var candidate=JSON.parse(raw);if(candidate&&typeof candidate==="object"&&Array.isArray(candidate.tasks)&&Array.isArray(candidate.pk))S=candidate;}
+  }catch(e){console.warn("CRTE stored data unreadable:",keys[i],e)}
+ }
+ if(!S){try{var old=sessionStorage.getItem(KEY);if(old){var candidate=JSON.parse(old);if(candidate&&typeof candidate==="object"&&Array.isArray(candidate.tasks)&&Array.isArray(candidate.pk))S=candidate;}}catch(e){console.warn("CRTE session recovery:",e)}}
+ if(S){S=Object.assign(defs(),S);save();}
+ if(!S)S=defs();
+ if(!Array.isArray(S.tasks))S.tasks=[];
+ if(!Array.isArray(S.pk)||S.pk.length!==3)S.pk=[true,true,true];
+ if(!Array.isArray(S.plan)||S.plan.length!==2)S.plan=[{t:"",on:true},{t:"",on:true}];
+ S.plan=S.plan.map(function(o){return{t:o&&o.t||"",on:o&&o.on!==false}});
 }
 function save(){
  try{
   var raw=JSON.stringify(S);
   localStorage.setItem(KEY,raw);
-  // تحقق فعلي من أن البيانات كُتبت، ولا نخفي خطأ التخزين.
   if(localStorage.getItem(KEY)!==raw)throw new Error("تعذر التحقق من حفظ البيانات");
+  // نسخة طوارئ منفصلة حتى لا يؤدي تلف المفتاح الرئيسي إلى فقد كل الإدخالات.
+  localStorage.setItem(KEY+"_backup",raw);
+  var m=$("msg");if(m&&m.textContent.indexOf("⚠️")===0)m.textContent="";
   return true;
  }catch(e){
-  var m=$("msg");if(m)m.textContent="⚠️ لم يتم حفظ البيانات على الجهاز: "+((e&&e.message)||e)+". حمّل نسخة احتياطية من القائمة.";
-  return false;
+  var m=$("msg");if(m)m.textContent="⚠️ فشل حفظ بيانات الأشغال على الهاتف: "+((e&&e.message)||e)+". صدّر نسخة احتياطية قبل إغلاق التطبيق.";
+  console.error("CRTE save failed",e);return false;
  }
 }
 
@@ -311,7 +316,10 @@ function syncTasks(){var rs=exactR();
    S.tasks=u.map(function(x){return{t:x,g:0,on:true}});
    S.plan=[{t:"",on:true},{t:"",on:true}];
    S.auto=key;save();dTasks();dPlan();return}}
- else if(S.auto){S.tasks=[];S.plan=[{t:"",on:true},{t:"",on:true}];S.auto="";save();dTasks();dPlan();return}
+ else if(S.auto){
+  // لا نحذف الأشغال التي أدخلها المستخدم لمجرد تغيير Poste أو Objet.
+  S.auto="";save();
+ }
  rPool()}
 var PLL=[];
 function rPlanPool(){var h="",seen={},have={},ex=exactR();PLL=[];
@@ -334,6 +342,7 @@ $("objet").addEventListener("input",function(){
 $("autre").addEventListener("input",function(){S.autre=this.value;save()});
 // حفظ احتياطي عند انتقال التطبيق للخلفية أو إغلاق الصفحة.
 window.addEventListener("pagehide",function(){save()});
+window.addEventListener("beforeunload",function(){save()});
 document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden")save()});
 
 function unesc(s){return s.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,"&")}
@@ -409,7 +418,7 @@ function layerClose(n){var i=-1,k;for(k=LAY.length-1;k>=0;k--){if(LAY[k].n===n){
  if(i===LAY.length-1){try{history.back()}catch(e){}setTimeout(function(){if(LAY[LAY.length-1]===L){LAY.pop();L.c()}},300)}
  else{LAY.splice(i,1);L.c()}}
 window.addEventListener("popstate",function(){var L=LAY.pop();if(L)L.c()});
-function snapshot(){return{app:"crte",v:1,date:new Date().toISOString(),lib:LIB,prefs:{pk:S.pk,resp:S.resp||0,autre:S.autre||""}}}
+function snapshot(){return{app:"crte",v:2,date:new Date().toISOString(),state:S,lib:LIB,prefs:{pk:S.pk,resp:S.resp||0,autre:S.autre||""}}}
 async function saveBlob(blob,nm){var dl=null;try{dl=await claude.use("downloads")}catch(e){}
  if(dl){await dl.save({filename:nm,data:blob});return}
  var file=new File([blob],nm,{type:blob.type});
@@ -425,6 +434,9 @@ function doRestore(file){var el=$("imsg");var rd=new FileReader();
   var lib=d.lib.filter(function(r){return r&&r.p&&Array.isArray(r.t)}).map(function(r){return{id:r.id||nid(),f:r.f||"",p:String(r.p),o:r.o||"",t:r.t.map(String),c:Array.isArray(r.c)?r.c.map(String):undefined,s:r.s}});
   if(!confirm("سيتم استبدال ملفات المرجعية الحالية ("+LIB.length+") بالنسخة ("+lib.length+"). متابعة؟"))return;
   LIB=lib;libSave();
+  if(d.state&&typeof d.state==="object"&&Array.isArray(d.state.tasks)&&Array.isArray(d.state.pk)){
+   S=Object.assign(defs(),d.state);if(!Array.isArray(S.plan))S.plan=[{t:"",on:true},{t:"",on:true}];save();fill();
+  }
   if(d.prefs){if(Array.isArray(d.prefs.pk)&&d.prefs.pk.length===3)S.pk=d.prefs.pk.map(Boolean);S.resp=+d.prefs.resp===1?1:0;S.autre=d.prefs.autre||"";save();$("autre").value=S.autre;dTeam();dResp()}
   rList();pickedP="";rPost();rObj();el.textContent="✅ تم استرجاع النسخة: "+lib.length+" ملف مرجعي"}
  catch(e){el.textContent="⚠️ تعذر الاسترجاع: "+((e&&e.message)||e)}};
