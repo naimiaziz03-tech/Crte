@@ -189,9 +189,33 @@ function defs(){return{d1:today(),d2:today(),h1:"",h2:"",crte:"",poste:"",objet:
 var S;
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
-function load(){S=null;try{var r=sessionStorage.getItem(KEY);S=r?JSON.parse(r):null}catch(e){S=null}
- if(!S||!S.tasks||!S.pk)S=defs();if(!Array.isArray(S.plan)||S.plan.length!==2||S.plan.some(function(o){return o&&o.on===undefined}))S.plan=[{t:"",on:true},{t:"",on:true}]}
-function save(){try{sessionStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function load(){S=null;var raw=null,fromSession=false;
+ try{raw=localStorage.getItem(KEY)}catch(e){}
+ if(!raw){try{raw=sessionStorage.getItem(KEY);fromSession=!!raw}catch(e){}}
+ try{S=raw?JSON.parse(raw):null}catch(e){S=null}
+ if(!S||typeof S!=="object"||Array.isArray(S))S=defs();
+ var d=defs();Object.keys(d).forEach(function(k){if(S[k]===undefined)S[k]=d[k]});
+ if(!Array.isArray(S.tasks))S.tasks=[];
+ if(!Array.isArray(S.pk))S.pk=[true,true,true];
+ while(S.pk.length<3)S.pk.push(true);
+ if(!Array.isArray(S.plan))S.plan=d.plan;
+ if(fromSession)save();
+}
+function save(){
+ // التخزين الدائم هو الأساس؛ sessionStorage مجرد نسخة احتياطية مؤقتة عند تعذر التخزين الدائم.
+ try{
+  var raw=JSON.stringify(S);
+  localStorage.setItem(KEY,raw);
+  try{sessionStorage.setItem(KEY,raw)}catch(e){}
+  return true;
+ }catch(e){
+  try{sessionStorage.setItem(KEY,JSON.stringify(S))}catch(x){}
+  return false;
+ }
+}
+// حفظ إضافي عند مغادرة الصفحة أو انتقال التطبيق إلى الخلفية.
+window.addEventListener('pagehide',function(){save()});
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')save()});
 var F=["d1","d2","h1","h2","poste","objet","autre","act"];
 $("d1").addEventListener("input",function(){var old=S.d1;if(!S.d2||S.d2===old){S.d2=this.value;$("d2").value=this.value}});
 F.forEach(function(k){$(k).addEventListener("input",function(){S[k]=this.value;save()})});
@@ -202,11 +226,21 @@ function dTeam(){var h="";NAMES.forEach(function(n,i){
  $("team").innerHTML=h}
 function dResp(){var n=["ELYAAGOUBI","HAKKI"],h="";n.forEach(function(x,i){h+='<button data-resp="'+i+'"'+((S.resp||0)===i?' class="p"':'')+'>'+x+'</button>'});$("respBox").innerHTML=h}
 function dPlan(){
- if(!Array.isArray(S.plan))S.plan=[{t:"",on:true},{t:"",on:true}];
- S.plan=S.plan.slice(0,2);while(S.plan.length<2)S.plan.push({t:"",on:true});
+ // خانتان فقط للإدخال الحر؛ تحويل أي بيانات قديمة إلى صيغة موحدة.
+ if(!Array.isArray(S.plan))S.plan=[];
+ S.plan=S.plan.slice(0,2).map(function(o){
+  if(typeof o==="string")return {t:o,on:true};
+  if(!o||typeof o!=="object")return {t:"",on:true};
+  return {t:String(o.t==null?"":o.t),on:true};
+ });
+ while(S.plan.length<2)S.plan.push({t:"",on:true});
  var h="";S.plan.forEach(function(o,i){
- h+='<div class="plan-field"><label>بند '+(i+1)+'</label><input type="text" dir="auto" data-pt="'+i+'" value="'+esc(o.t||"")+'" placeholder="اكتب بند المراقبة هنا..."></div>'});
- $("plan").innerHTML=h;$("pPool").innerHTML=""}
+  h+='<div class="plan-field"><label>بند '+(i+1)+'</label><input type="text" dir="auto" data-pt="'+i+'" value="'+esc(o.t)+'" placeholder="اكتب بند المراقبة هنا..."></div>';
+ });
+ $("plan").innerHTML=h;
+ // لا تعرض اقتراحات أو اختيارات تحت هاتين الخانتين.
+ $("pPool").innerHTML="";
+}
 function dTasks(){var h="";S.tasks.forEach(function(o,i){
  h+='<div class="item"><input type="checkbox" data-ti="'+i+'"'+(o.on?" checked":"")+'><input type="text" dir="ltr" data-tt="'+i+'" value="'+esc(o.t)+'"><button class="d" data-td="'+i+'">✕</button></div>'});
  $("tasks").innerHTML=h;rPool()}
@@ -276,9 +310,15 @@ function rPost(){var q=N(S.poste),h="";PL=[];
  if(PL.length){h='<div class="sh">محطات من التقارير السابقة</div>';PL.forEach(function(x,i){h+='<button data-pp="'+i+'">'+esc(x.p)+'<small>'+x.n+' تقرير</small></button>'})}
  $("pSug").innerHTML=h}
 function rObj(){var rs=matchR(),h="",seen={};OL=[];
- rs.forEach(function(r){var k=N(r.o)+"|"+r.t.map(N).join("~");if(r.o&&!seen[k]){seen[k]=1;OL.push(r)}});
- if(OL.length){h='<div class="sh">مواضيع سابقة لنفس المحطة، اضغط لملء الموضوع وأشغاله من نفس الملف</div>';OL.forEach(function(r,i){h+='<button data-ob="'+i+'">'+esc(r.o)+'<small>'+(r.s?esc(r.s)+' · ':'')+esc(r.f||"")+' · '+r.t.length+' أشغال</small></button>'})}
- $("oSug").innerHTML=h;rPool()}
+ rs.forEach(function(r){var k=N(r.o);if(r.o&&!seen[k]){seen[k]=1;OL.push(r)}});
+ if(OL.length){h='<div class="sh">مواضيع سابقة لنفس المحطة. عند اختيار الموضوع تظهر أشغاله تلقائيا ويمكنك تعديلها</div>';OL.forEach(function(r,i){h+='<button data-ob="'+i+'">'+esc(r.o)+'<small>'+esc(r.f||"")+' · '+r.t.length+' أشغال</small></button>'})}
+ $("oSug").innerHTML=h;
+ // إذا كانت للمحطة نتيجة مرجعية واحدة فقط، نملأ Objet والأشغال تلقائيا دون اختيار يدوي.
+ if(!S.objet&&OL.length===1){
+  S.objet=OL[0].o;$("objet").value=S.objet;save();syncTasks();
+ }
+ rPool();
+}
 function exactR(){var p=N(S.poste),o=N(S.objet);if(!p||!o)return[];return allDB().filter(function(r){return N(r.p)===p&&N(r.o)===o})}
 function syncTasks(){var rs=exactR();
  if(rs.length){var key=rs.map(function(r){return r.id}).join(",");
@@ -286,22 +326,30 @@ function syncTasks(){var rs=exactR();
    S.tasks=u.map(function(x){return{t:x,g:0,on:true}});
    S.plan=[{t:"",on:true},{t:"",on:true}];
    S.auto=key;save();dTasks();dPlan();return}}
- else if(S.auto){S.tasks=[];S.plan=[{t:"",on:true},{t:"",on:true}];S.auto="";save();dTasks();dPlan();return}
+ else if(S.auto){
+  // Keep manually entered work and tests when the current station/object no longer matches a library record.
+  // Only clear the automatic-match marker; never erase the user's task list or inspection plan.
+  S.auto="";save();
+ }
  rPool()}
 var PLL=[];
-function rPlanPool(){var h="",seen={},have={},ex=exactR();PLL=[];
- if(ex.length){var pk=N(S.poste);(S.plan||[]).forEach(function(o){if(o.t.trim())have[N(o.t)]=1});
-  allDB().forEach(function(r){if(N(r.p)===pk)(r.c||[]).forEach(function(x){var k=N(x);if(!seen[k]&&!have[k]){seen[k]=1;PLL.push(x)}})})}
- if(PLL.length){h='<div class="sh">بنود خطة المراقبة لنفس المحطة، اضغط لإضافتها</div><button data-plall="1">➕ إضافة كل البنود ('+PLL.length+')</button>';PLL.forEach(function(x,i){h+='<button data-plp="'+i+'">➕ '+esc(x)+'</button>'})}
- $("pPool").innerHTML=h}
+function rPlanPool(){
+ // تعطيل اقتراحات المكتبة في خطة المراقبة: المطلوب خانتان بإدخال حر فقط.
+ PLL=[];
+ $("pPool").innerHTML="";
+}
 function rPool(){var h="",seen={},have={},ex=exactR();TL=[];
  if(ex.length){var pk=N(S.poste),exid={};ex.forEach(function(r){exid[r.id]=1});
   S.tasks.forEach(function(o){have[N(o.t)]=1});
   allDB().forEach(function(r){if(N(r.p)===pk)r.t.forEach(function(x){var k=N(x);if(!seen[k]&&!have[k]){seen[k]=1;TL.push(x)}})})}
  if(TL.length){h='<div class="sh">أشغال إضافية من تقارير أخرى لنفس المحطة، اضغط لإضافتها</div><button data-tall="1">➕ إضافة كل الأشغال الإضافية ('+TL.length+')</button>';TL.forEach(function(x,i){h+='<button data-tp="'+i+'">➕ '+esc(x)+'</button>'})}
  $("tPool").innerHTML=h;rPlanPool()}
-$("poste").addEventListener("input",function(){pickedP="";if(!(S.poste||"").trim()&&S.objet){S.objet="";$("objet").value="";save()}showObj();rPost();rObj();syncTasks()});
-$("objet").addEventListener("input",function(){syncTasks()});
+$("poste").addEventListener("input",function(){
+ pickedP="";S.poste=this.value;
+ if(!(S.poste||"").trim()&&S.objet){S.objet="";$("objet").value="";}
+ save();showObj();rPost();rObj();syncTasks();
+});
+$("objet").addEventListener("input",function(){S.objet=this.value;save();syncTasks()});
 
 function unesc(s){return s.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,"&")}
 function paras(xml){xml=xml.replace(/<mc:Fallback>[\s\S]*?<\/mc:Fallback>/g,"");var out=[];
