@@ -204,7 +204,18 @@ function load(){
  if(!S||!S.tasks||!S.pk)S=defs();
  if(!Array.isArray(S.plan)||S.plan.length!==2||S.plan.some(function(o){return o&&o.on===undefined}))S.plan=[{t:"",on:true},{t:"",on:true}];
 }
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function save(){
+ try{
+  var raw=JSON.stringify(S);
+  localStorage.setItem(KEY,raw);
+  // تحقق فعلي من أن البيانات كُتبت، ولا نخفي خطأ التخزين.
+  if(localStorage.getItem(KEY)!==raw)throw new Error("تعذر التحقق من حفظ البيانات");
+  return true;
+ }catch(e){
+  var m=$("msg");if(m)m.textContent="⚠️ لم يتم حفظ البيانات على الجهاز: "+((e&&e.message)||e)+". حمّل نسخة احتياطية من القائمة.";
+  return false;
+ }
+}
 
 var F=["d1","d2","h1","h2","poste","objet","autre","act"];
 $("d1").addEventListener("input",function(){var old=S.d1;if(!S.d2||S.d2===old){S.d2=this.value;$("d2").value=this.value}});
@@ -315,7 +326,15 @@ function rPool(){var h="",seen={},have={},ex=exactR();TL=[];
  if(TL.length){h='<div class="sh">أشغال إضافية من تقارير أخرى لنفس المحطة، اضغط لإضافتها</div><button data-tall="1">➕ إضافة كل الأشغال الإضافية ('+TL.length+')</button>';TL.forEach(function(x,i){h+='<button data-tp="'+i+'">➕ '+esc(x)+'</button>'})}
  $("tPool").innerHTML=h;rPlanPool()}
 $("poste").addEventListener("input",function(){pickedP="";if(!(S.poste||"").trim()&&S.objet){S.objet="";$("objet").value="";save()}showObj();rPost();rObj();syncTasks()});
-$("objet").addEventListener("input",function(){syncTasks()});
+$("objet").addEventListener("input",function(){
+ S.objet=this.value;
+ save();
+ syncTasks();
+});
+$("autre").addEventListener("input",function(){S.autre=this.value;save()});
+// حفظ احتياطي عند انتقال التطبيق للخلفية أو إغلاق الصفحة.
+window.addEventListener("pagehide",function(){save()});
+document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden")save()});
 
 function unesc(s){return s.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,"&")}
 function paras(xml){xml=xml.replace(/<mc:Fallback>[\s\S]*?<\/mc:Fallback>/g,"");var out=[];
