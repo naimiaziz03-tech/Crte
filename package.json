@@ -1,0 +1,17 @@
+{
+  "name": "crte-android",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CRTE Android application",
+  "scripts": {
+    "build": "node -e \"require('fs').mkdirSync('www',{recursive:true}); if(!require('fs').existsSync('www/index.html')) throw new Error('www/index.html missing')\"",
+    "android:sync": "npx cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.4",
+    "@capacitor/core": "^7.4.4"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.4"
+  }
+}
