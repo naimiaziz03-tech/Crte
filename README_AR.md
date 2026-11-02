@@ -1,32 +1,35 @@
-# حزمة تحديث تطبيق CRTE عبر Firebase Hosting
+# مشروع CRTE — الرفع إلى GitHub والنشر على Firebase
 
-## شنو كاين فالحزمة؟
-- `public/index.html`: نسخة التطبيق المستقلة `index_modifie_v2(1).html` كما هي، بلا تغيير منطق التخزين المحلي.
-- `public/sw.js`: Service Worker جديد بإصدار `crte-app-shell-v23`، كيجلب صفحة التطبيق من الإنترنت أولاً، وكيستعمل النسخة المخزنة غير إلا ماكانش الإنترنت.
-- الأيقونات الأصلية.
-- `firebase.json` و`.firebaserc` وGitHub Actions للنشر التلقائي.
+هذه الحزمة مبنية على النسخة الصحيحة `crte-github-app_2.zip`، وعنوان التطبيق داخلها هو **تقرير الأشغال والاختبارات CRTE**.
 
-## مهم قبل النقل
-التطبيق الحالي حسب الدليل السابق منشور على GitHub Pages: `https://naimiaziz03-tech.github.io/Crte/`.
-Firebase Hosting غادي يعطيك Origin/رابط مختلف. المتصفح كيعتبر الرابط الجديد موقعاً مختلفاً، وبالتالي التثبيت القديم ما كيتحدّثش تلقائياً عبر الرابط الجديد، والبيانات المحلية المرتبطة بالرابط القديم ما كتنتقلش وحدها. **ما تحذفش التطبيق القديم وما تمسحش بيانات Chrome** قبل تجربة النسخة الجديدة والتأكد من نقل البيانات بالطريقة المناسبة.
+## محتويات المجلد
+- `public/index.html`: ملف التطبيق الأصلي، بدون تغيير.
+- `public/sw.js`: Service Worker بإصدار `crte-v23` لتحديث ملفات التطبيق.
+- `public/crte-app.webmanifest` والأيقونات: ملفات PWA الأصلية.
+- `firebase.json` و`.firebaserc`: إعداد Firebase Hosting للمشروع `preparation-ce84e`.
+- `.github/workflows/firebase-deploy.yml`: نشر تلقائي عند كل Push إلى `main`.
 
-## النشر عبر GitHub Actions
-1. فعّل Firebase Hosting للمشروع `preparation-ce84e` من Firebase Console.
-2. أنشئ Service Account بصلاحية النشر على Firebase Hosting (من Google Cloud IAM)، وحمّل ملف JSON ديالو. ما تضعش هاد الملف داخل الحزمة أو المستودع.
-3. في GitHub repository افتح: Settings → Secrets and variables → Actions → New repository secret.
-4. الاسم بالضبط: `FIREBASE_SERVICE_ACCOUNT_PREPARATION_CE84E`، والقيمة هي محتوى JSON كامل ديال Service Account.
-5. ارفع محتويات هاد المجلد إلى جذر مستودع GitHub (بما فيه مجلد `.github`). خليه على branch `main`.
-6. من Actions شغّل `Deploy CRTE to Firebase Hosting` أو دير Push. من بعد النشر غادي يعطيك Firebase رابطاً من نوع `https://PROJECT_ID.web.app`.
-7. أي تعديل مستقبلي على `public/index.html` أو `public/sw.js` ثم Push إلى `main` كينشر النسخة الجديدة.
+## الرفع إلى GitHub
+1. افتح مستودع GitHub الصحيح الخاص بمشروع CRTE.
+2. ارفع **محتويات هذا المجلد كلها** إلى جذر المستودع، وليس مجلد `CRTE_GitHub_Firebase` كطبقة إضافية.
+3. تأكد أن GitHub يعرض `.github/workflows/firebase-deploy.yml` وأن مجلد `public` موجود في الجذر.
+4. اعمل Commit إلى الفرع `main`.
 
-## حماية البيانات
-- ما كاين لا Firebase Auth داخل واجهة التطبيق ولا Firestore ولا رفع لبيانات الاستعمال.
-- بيانات التطبيق باقية في `localStorage` ديال نفس المتصفح/نفس Origin، كما كان في الملف الأصلي.
-- Service Worker ما كيمسحش `localStorage` ولا `IndexedDB`؛ كيمسح فقط Cache Storage القديم اللي الاسم ديالو كيبدا بـ `crte-app-shell-`.
-- صلاحية النشر محصورة في GitHub Secret/Actions؛ ما تحطش Service Account JSON في HTML أو في ملفات `public`.
+## إعداد النشر
+1. من Firebase Console افتح المشروع `preparation-ce84e` وفعّل Firebase Hosting إذا لم يكن مفعلاً.
+2. أنشئ Service Account مخصصاً للنشر، بصلاحية مناسبة لـ Firebase Hosting فقط قدر الإمكان، وحمّل JSON الخاص به.
+3. في GitHub: Settings → Secrets and variables → Actions → New repository secret.
+4. اسم السر بالضبط: `FIREBASE_SERVICE_ACCOUNT_PREPARATION_CE84E`.
+5. ضع محتوى JSON الخاص بحساب الخدمة كاملاً في قيمة السر. لا تضع ملف JSON داخل المستودع ولا تشاركه في المحادثة.
+6. أعد تشغيل Workflow من Actions أو ادفع Commit جديداً إلى `main`.
 
-## ملاحظة على تسجيل دخول المسؤول
-المصادقة Email/Password ديال Firebase ما كتمنحش بوحدها صلاحية نشر ملفات Hosting. هاد الحزمة كتخلي النشر للمسؤول اللي عندو صلاحية المستودع وGitHub Actions secret. هادي طريقة آمنة وبسيطة بلا ما نعرّض مفاتيح النشر داخل التطبيق.
+## حماية البيانات المحلية
+- ملف `index.html` الأصلي لم يتم تعديله.
+- بيانات التطبيق التي يخزنها في `localStorage` تبقى محلية على الجهاز.
+- `sw.js` لا يقرأ أو يمسح `localStorage` أو `IndexedDB`.
+- عند تفعيل العامل الجديد، يمسح فقط Cache Storage القديم الذي يبدأ اسمه بـ `crte-`، ولا يمسح مخازن تطبيقات أخرى.
 
-## فحص النسخة
-الملف المستقل `index_modifie_v2(1).html` أكبر ومختلف عن `index.html` داخل ZIP القديم؛ لذلك استعملنا الملف المستقل كمصدر للتطبيق، وما اعتمدناش ZIP القديم اللي فيه Service Worker أقدم.
+## تنبيه مهم قبل اعتماد Firebase كرابط التطبيق
+إذا كان التطبيق مثبتاً حالياً من GitHub Pages، فإن Firebase Hosting سيعطي Origin/رابطاً مختلفاً. بيانات `localStorage` مرتبطة بالـ Origin، لذلك لن تظهر تلقائياً في الرابط الجديد. لا تحذف التطبيق القديم ولا توقف GitHub Pages قبل اختبار النسخة الجديدة وتصدير/استرجاع نسخة احتياطية داخل التطبيق.
+
+هذه الحزمة لا تنشر شيئاً وحدها؛ النشر يبدأ بعد إعداد GitHub Secret وتشغيل Workflow.
