@@ -189,33 +189,47 @@ function defs(){return{d1:today(),d2:today(),h1:"",h2:"",crte:"",poste:"",objet:
 var S;
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
-function load(){S=null;var raw=null,fromSession=false;
- try{raw=localStorage.getItem(KEY)}catch(e){}
- if(!raw){try{raw=sessionStorage.getItem(KEY);fromSession=!!raw}catch(e){}}
+// Stockage robuste : localStorage (synchrone) + IndexedDB (copie durable).
+var STORAGE_KEYS=[KEY,"crte_d554_v6","crte_d554_v5","crte_d554_v4","crte_d554_v3","crte_d554_v2","crte_d554_v1","crte_state_v1","crte_form_v1"];
+var DB_NAME="CRTE_PERSISTENCE",DB_STORE="state",DB_ID="current";
+var __dbPromise=null;
+function openCRTEDB(){
+ if(!window.indexedDB)return Promise.resolve(null);
+ if(__dbPromise)return __dbPromise;
+ __dbPromise=new Promise(function(resolve){
+  try{var q=indexedDB.open(DB_NAME,1);
+   q.onupgradeneeded=function(){var db=q.result;if(!db.objectStoreNames.contains(DB_STORE))db.createObjectStore(DB_STORE)};
+   q.onsuccess=function(){resolve(q.result)};q.onerror=function(){resolve(null)};
+  }catch(e){resolve(null)}
+ });return __dbPromise;
+}
+function idbWrite(value){return openCRTEDB().then(function(db){if(!db)return false;return new Promise(function(resolve){try{var tx=db.transaction(DB_STORE,"readwrite");tx.objectStore(DB_STORE).put(value,DB_ID);tx.oncomplete=function(){resolve(true)};tx.onerror=function(){resolve(false)};tx.onabort=function(){resolve(false)}}catch(e){resolve(false)}})})}
+function idbRead(){return openCRTEDB().then(function(db){if(!db)return null;return new Promise(function(resolve){try{var q=db.transaction(DB_STORE,"readonly").objectStore(DB_STORE).get(DB_ID);q.onsuccess=function(){resolve(q.result||null)};q.onerror=function(){resolve(null)}}catch(e){resolve(null)}})})}
+function load(){
+ S=null;var raw=null,chosen=null;
+ for(var i=0;i<STORAGE_KEYS.length;i++){try{raw=localStorage.getItem(STORAGE_KEYS[i]);if(raw){chosen=STORAGE_KEYS[i];break}}catch(e){}}
  try{S=raw?JSON.parse(raw):null}catch(e){S=null}
  if(!S||typeof S!=="object"||Array.isArray(S))S=defs();
  var d=defs();Object.keys(d).forEach(function(k){if(S[k]===undefined)S[k]=d[k]});
- if(!Array.isArray(S.tasks))S.tasks=[];
- if(!Array.isArray(S.pk))S.pk=[true,true,true];
- while(S.pk.length<3)S.pk.push(true);
- if(!Array.isArray(S.plan))S.plan=d.plan;
- if(fromSession)save();
+ if(!Array.isArray(S.tasks))S.tasks=[];if(!Array.isArray(S.pk))S.pk=[true,true,true];while(S.pk.length<3)S.pk.push(true);if(!Array.isArray(S.plan))S.plan=d.plan;
+ // لا نستعمل sessionStorage كمصدر أساسي لأنه يختفي عند إغلاق التطبيق.
+ if(chosen&&chosen!==KEY)save();
+ // استرجاع نسخة IndexedDB إذا كانت أحدث أو كان localStorage فارغاً.
+ idbRead().then(function(v){if(raw||!v||!v.data)return;var current=0,backup=v.savedAt||0;
+  if(backup>current){try{var recovered=JSON.parse(v.data);if(recovered&&typeof recovered==="object"){S=recovered;var dd=defs();Object.keys(dd).forEach(function(k){if(S[k]===undefined)S[k]=dd[k]});if(!Array.isArray(S.tasks))S.tasks=[];if(!Array.isArray(S.plan))S.plan=dd.plan;save();if(typeof fill==="function")fill();}}catch(e){}}
+ });
 }
 function save(){
- // التخزين الدائم هو الأساس؛ sessionStorage مجرد نسخة احتياطية مؤقتة عند تعذر التخزين الدائم.
- try{
-  var raw=JSON.stringify(S);
-  localStorage.setItem(KEY,raw);
-  try{sessionStorage.setItem(KEY,raw)}catch(e){}
-  return true;
- }catch(e){
-  try{sessionStorage.setItem(KEY,JSON.stringify(S))}catch(x){}
-  return false;
- }
+ try{var copy=JSON.parse(JSON.stringify(S));copy._savedAt=Date.now();var raw=JSON.stringify(copy);localStorage.setItem(KEY,raw);idbWrite({data:raw,savedAt:copy._savedAt});return true}
+ catch(e){try{idbWrite({data:JSON.stringify(S),savedAt:Date.now()})}catch(x){}return false}
 }
-// حفظ إضافي عند مغادرة الصفحة أو انتقال التطبيق إلى الخلفية.
-window.addEventListener('pagehide',function(){save()});
-document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')save()});
+function saveBeforeExit(){try{save()}catch(e){}}
+window.addEventListener('pagehide',saveBeforeExit);
+window.addEventListener('beforeunload',saveBeforeExit);
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')saveBeforeExit()});
+// حفظ فوري لأي تعديل داخل الحقول، حتى الحقول التي لا تملك مستمعاً خاصاً.
+document.addEventListener('input',function(){if(S)saveBeforeExit()},true);
+document.addEventListener('change',function(){if(S)saveBeforeExit()},true);
 var F=["d1","d2","h1","h2","poste","objet","autre","act"];
 $("d1").addEventListener("input",function(){var old=S.d1;if(!S.d2||S.d2===old){S.d2=this.value;$("d2").value=this.value}});
 F.forEach(function(k){$(k).addEventListener("input",function(){S[k]=this.value;save()})});
@@ -322,15 +336,9 @@ function rObj(){var rs=matchR(),h="",seen={};OL=[];
 function exactR(){var p=N(S.poste),o=N(S.objet);if(!p||!o)return[];return allDB().filter(function(r){return N(r.p)===p&&N(r.o)===o})}
 function syncTasks(){var rs=exactR();
  if(rs.length){var key=rs.map(function(r){return r.id}).join(",");
-  if(S.auto!==key){var seen={},u=[];rs.forEach(function(r){r.t.forEach(function(x){var k=N(x);if(!seen[k]){seen[k]=1;u.push(x)}})});
-   S.tasks=u.map(function(x){return{t:x,g:0,on:true}});
-   S.plan=[{t:"",on:true},{t:"",on:true}];
-   S.auto=key;save();dTasks();dPlan();return}}
- else if(S.auto){
-  // Keep manually entered work and tests when the current station/object no longer matches a library record.
-  // Only clear the automatic-match marker; never erase the user's task list or inspection plan.
-  S.auto="";save();
- }
+  // اقتراح الأشغال المرجعية لا يستبدل أبداً ما أدخله المستخدم. نملأ القائمة فقط إذا كانت فارغة.
+  if(S.auto!==key){if(!S.tasks.length){var seen={},u=[];rs.forEach(function(r){r.t.forEach(function(x){var k=N(x);if(!seen[k]){seen[k]=1;u.push(x)}})});S.tasks=u.map(function(x){return{t:x,g:0,on:true}})}S.auto=key;save();dTasks();}
+ } else if(S.auto){S.auto="";save();}
  rPool()}
 var PLL=[];
 function rPlanPool(){
@@ -521,8 +529,36 @@ async function viewDoc(){
  }catch(e){c.innerHTML='<p style="color:#fff;padding:16px">'+esc((e&&e.message)||e)+'</p>'}
 }
 function closeView(){layerClose("view")}
-load();fill();
-if("serviceWorker" in navigator&&/^https?:/.test(location.protocol))window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})});
+// تشغيل آمن: لا نعيد تسجيل Service Worker قديم قد يعرض صفحة فارغة أو نسخة تالفة.
+// إذا كان هناك Service Worker سابق تابع لهذا الموقع، نوقفه حتى تُحمّل الصفحة مباشرة من GitHub Pages.
+(function(){
+ try{
+  if("serviceWorker" in navigator){
+   navigator.serviceWorker.getRegistrations().then(function(regs){
+    regs.forEach(function(reg){reg.unregister().catch(function(){});});
+   }).catch(function(){});
+  }
+ }catch(e){}
+})();
+try{
+ load();
+ fill();
+ // حفظ عند مغادرة التطبيق أو إخفائه، مع عدم الاعتماد على حدث الخروج وحده.
+ save();
+}catch(bootError){
+ console.error("CRTE startup error",bootError);
+ var root=document.body;
+ if(root){
+  var panel=document.createElement("div");
+  panel.dir="rtl";
+  panel.style.cssText="margin:16px;padding:18px;border:1px solid #d97706;border-radius:12px;background:#fff7ed;color:#7c2d12;font:16px sans-serif;line-height:1.8";
+  panel.innerHTML="<b>تعذر تشغيل واجهة CRTE بشكل كامل.</b><br>لم يتم حذف البيانات المحفوظة. حدّث الصفحة، وإذا استمر المشكل أرسل صورة لهذه الرسالة.";
+  root.insertBefore(panel,root.firstChild);
+ }
+}
+// استرجاع تلقائي إذا كان التطبيق عاد من الخلفية.
+document.addEventListener("resume",function(){try{if(!S)load();fill();}catch(e){console.error(e);}});
+window.addEventListener("pageshow",function(){try{if(S)save();}catch(e){}});
 (function(){var box=$("pwaBox"),ev=null;
  box.innerHTML='<h3>التثبيت</h3><button class="p w" id="ib" hidden>📲 تثبيت التطبيق</button><p class="hint" id="il"></p><p class="hint" dir="ltr" id="iu"></p>';
  $("iu").textContent=location.href;
