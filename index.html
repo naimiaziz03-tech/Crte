@@ -116,8 +116,8 @@ select:focus{outline:2px solid var(--pr)}
  <div class="card"><h2>التاريخ والتوقيت</h2>
   <div class="row"><div><label>Date (من)</label><input type="date" id="d1"></div>
   <div><label>Au (إلى)</label><input type="date" id="d2"></div></div>
-  <div class="row"><div><label>Horaire du</label><input type="time" id="h1"></div>
-  <div><label>à</label><input type="time" id="h2"></div></div>
+  <div class="row"><div><label>Horaire du</label><input type="time" id="h1" lang="en-GB" dir="ltr" inputmode="numeric"></div>
+  <div><label>à</label><input type="time" id="h2" lang="en-GB" dir="ltr" inputmode="numeric"></div></div>
  </div>
 
  <div class="card"><h2>المحطة والموضوع</h2>
@@ -533,7 +533,7 @@ async function makeBlob(){
  z.file("word/document.xml",build(build2(xml)));
  return z.generateAsync({type:"blob",compression:"DEFLATE",mimeType:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"})}
 function fname(){
- // اسم الملف حسب تاريخ التقرير: DD-MM-YYYY
+ // نفس صيغة التاريخ الأصلية YYYY-MM-DD، مع تغيير اسم الملف فقط.
  var raw=(S.d1||"").trim(),d;
  if(/^\d{4}-\d{2}-\d{2}$/.test(raw)){
   var a=raw.split("-");d=new Date(Number(a[0]),Number(a[1])-1,Number(a[2]));
@@ -541,10 +541,10 @@ function fname(){
   var b=raw.split("/");d=new Date(Number(b[2]),Number(b[1])-1,Number(b[0]));
  }else d=new Date();
  if(isNaN(d.getTime()))d=new Date();
- var jj=("0"+d.getDate()).slice(-2);
- var mm=("0"+(d.getMonth()+1)).slice(-2);
  var yyyy=d.getFullYear();
- return "Preparation et Compte rendu "+jj+"-"+mm+"-"+yyyy+".docx";
+ var mm=("0"+(d.getMonth()+1)).slice(-2);
+ var dd=("0"+d.getDate()).slice(-2);
+ return "Preparation et Compte rendu_"+yyyy+"-"+mm+"-"+dd+".docx";
 }
 async function outFile(blob,nm){
  // تنزيل مباشر من المتصفح لتفادي خطأ Library file not found.
