@@ -185,7 +185,7 @@ var KEY="crte_d554_v6";
 var NAMES=["NAIMI Aziz","JAGHMOUM Jaouad","MORHLI Mouad"];
 function today(){var d=new Date();return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2)}
 function defs(){return{d1:today(),d2:today(),h1:"",h2:"",crte:"",poste:"",objet:"",obs:"",autre:"",pk:[true,true,true],auto:"",resp:0,plan:[{t:"",on:true},{t:"",on:true}],act:"",
- tasks:[],tasksPoste:""}}
+ tasks:[]}}
 var S;
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
@@ -220,7 +220,6 @@ async function load(){
  if(!Array.isArray(S.pk))S.pk=[true,true,true];while(S.pk.length<3)S.pk.push(true);
  if(!Array.isArray(S.plan))S.plan=d.plan;
  if(typeof S.tasksCleared!=="boolean")S.tasksCleared=false;
- if(typeof S.tasksPoste!=="string")S.tasksPoste="";
  save();
 }
 function save(){
@@ -238,7 +237,7 @@ var F=["d1","d2","h1","h2","poste","objet","autre","act"];
 $("d1").addEventListener("input",function(){var old=S.d1;if(!S.d2||S.d2===old){S.d2=this.value;$("d2").value=this.value}});
 F.forEach(function(k){$(k).addEventListener("input",function(){S[k]=this.value;save()})});
 function showObj(){$("objBox").hidden=!(S.poste&&S.poste.trim())}
-function fill(){F.forEach(function(k){$(k).value=S[k]||""});showObj();dTeam();dResp();dPlan();dTasks();rObj();syncTasks();$("autreBox").open=!!(S.autre&&S.autre.trim())}
+function fill(){F.forEach(function(k){$(k).value=S[k]||""});showObj();dTeam();dResp();dPlan();dTasks();rObj();$("autreBox").open=!!(S.autre&&S.autre.trim())}
 function dTeam(){var h="";NAMES.forEach(function(n,i){
  h+='<label class="tm"><input type="checkbox" data-pk="'+i+'"'+(S.pk[i]?" checked":"")+'><span dir="ltr">'+esc(n)+'</span></label>'});
  $("team").innerHTML=h}
@@ -286,7 +285,7 @@ document.addEventListener("click",function(e){
  if(b.getAttribute("data-tall")){TL.forEach(function(x){S.tasks.push({t:x,g:S.tasks.length?S.tasks[S.tasks.length-1].g:0,on:true})});save();dTasks();return}
  var pp=b.getAttribute("data-pp"),ob=b.getAttribute("data-ob"),tp=b.getAttribute("data-tp");
  if(pp!==null){var x=PL[+pp];S.poste=x.p;pickedP=x.p;$("poste").value=x.p;save();showObj();rPost();rObj();syncTasks();return}
- if(ob!==null){var r=OL[+ob];S.objet=r.o;$("objet").value=r.o;S.plan=[{t:"",on:true},{t:"",on:true}];save();rObj();syncTasks();dPlan();return}
+ if(ob!==null){var r=OL[+ob];S.objet=r.o;$("objet").value=r.o;S.tasksCleared=false;S.tasks=r.t.map(function(z){return{t:z,g:0,on:true}});S.auto=exactR().map(function(x){return x.id}).join(",");S.plan=[{t:"",on:true},{t:"",on:true}];save();dTasks();dPlan();return}
  if(tp!==null){S.tasks.push({t:TL[+tp],g:S.tasks.length?S.tasks[S.tasks.length-1].g:0,on:true});save();dTasks();return}
  if(b.getAttribute("data-addtask")){S.tasksCleared=false;S.tasks.push({t:"",g:S.tasks.length?S.tasks[S.tasks.length-1].g:0,on:true});save();dTasks();return}
  var d=b.getAttribute("data-td");if(d!==null){S.tasks.splice(+d,1);if(!S.tasks.length)S.tasksCleared=true;save();dTasks();return}
@@ -337,20 +336,13 @@ function rObj(){var rs=matchR(),h="",seen={};OL=[];
  }
  rPool();
 }
-function exactR(){var p=N(S.poste),o=N(S.objet);if(!p)return[];return allDB().filter(function(r){return N(r.p)===p&&(!o||N(r.o)===o)})}
-function posteRecords(){var p=N(S.poste);if(!p)return[];return allDB().filter(function(r){return N(r.p)===p})}
-function syncTasks(){
- // Poste هو المفتاح الوحيد لقائمة الأشغال. تغيير Objet لا يمسحها ولا يستبدلها.
- var pk=N(S.poste),rs=posteRecords();
- if(pk&&rs.length&&S.tasksPoste!==pk){
-  var seen={},items=[];
-  rs.forEach(function(r){(r.t||[]).forEach(function(x){var k=N(x);if(k&&!seen[k]){seen[k]=1;items.push(x)}})});
-  if(items.length){S.tasks=items.map(function(x){return{t:x,g:0,on:true}});S.tasksPoste=pk;S.tasksCleared=false;S.auto=rs.map(function(x){return x.id}).join(",");save();dTasks();}
- }else if(pk&&rs.length&&!S.tasksPoste){
-  S.tasksPoste=pk;save();
- }
- rPool();
-}
+function exactR(){var p=N(S.poste),o=N(S.objet);if(!p||!o)return[];return allDB().filter(function(r){return N(r.p)===p&&N(r.o)===o})}
+function syncTasks(){var rs=exactR();
+ if(rs.length){var key=rs.map(function(r){return r.id}).join(",");
+  // اقتراح الأشغال المرجعية لا يستبدل أبداً ما أدخله المستخدم. نملأ القائمة فقط إذا كانت فارغة.
+  if(S.auto!==key){if(!S.tasks.length&&!S.tasksCleared){var seen={},u=[];rs.forEach(function(r){r.t.forEach(function(x){var k=N(x);if(!seen[k]){seen[k]=1;u.push(x)}})});S.tasks=u.map(function(x){return{t:x,g:0,on:true}})}S.auto=key;save();dTasks();}
+ } else if(S.auto){S.auto="";save();}
+ rPool()}
 var PLL=[];
 function rPlanPool(){
  // تعطيل اقتراحات المكتبة في خطة المراقبة: المطلوب خانتان بإدخال حر فقط.
