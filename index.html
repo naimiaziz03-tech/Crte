@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="crte-app.webmanifest">
 <meta name="theme-color" content="#d9650b">
 <link rel="icon" href="icon-crte-192.png">
 <link rel="apple-touch-icon" href="icon-crte-192.png">
@@ -154,7 +155,7 @@ select:focus{outline:2px solid var(--pr)}
 <div id="mn" hidden><aside class="mp"><div class="mh"><b>القائمة</b><button data-menu="0" aria-label="إغلاق">✕</button></div>
  <button class="p w" data-addfiles="1">📎 إضافة ملفات (أمثلة)</button>
  <input type="file" id="fi" multiple accept=".docx" hidden>
- <p class="hint">أضف تقارير CRTE سابقة بصيغة Word (.docx). تُحفظ ملفات المرجعية محلياً داخل هذا الهاتف فقط.</p>
+ <p class="hint">أضف تقارير CRTE سابقة بصيغة Word (.docx). تنضم تلقائيا إلى ملفات المرجعية، ويقترح التطبيق منها المحطة والموضوع والأشغال. تبقى محفوظة في هذا الجهاز.</p>
  <div id="imsg"></div>
  <button class="w" data-libopen="1" style="margin-top:12px">✏️ تعديل ملفات المرجعية</button>
  <button class="w" data-backup="1" style="margin-top:8px">💾 تحميل نسخة كاملة (نسخة احتياطية)</button>
@@ -166,7 +167,7 @@ select:focus{outline:2px solid var(--pr)}
  <input type="file" id="fr" accept=".json,application/json" hidden>
  <p class="hint">النسخة الكاملة ملف يحفظ كل ملفات المرجعية (الأصلية والمضافة والمعدّلة). على هاتف جديد: ثبّت التطبيق ثم «استرجاع نسخة كاملة» واختر الملف.</p>
  <p class="hint" id="icount"></p>
- </aside><button class="mbk" data-menu="0" aria-label="إغلاق"></button></div>
+ <div id="pwaBox"></div></aside><button class="mbk" data-menu="0" aria-label="إغلاق"></button></div>
 <div id="lib" hidden><div class="lh"><button data-libclose="1" aria-label="رجوع">✕</button><b id="libT">ملفات المرجعية</b><button data-lrestore="1" title="استرجاع المرجعيات الأصلية" aria-label="استرجاع الأصلية">♻️</button></div><div id="libBody"></div></div>
 <div class="fab"><button data-view="cur" title="عرض الوثيقتين" aria-label="عرض الوثيقتين">👁️</button><button class="p" data-save="all" title="حفظ الوثيقتين" aria-label="حفظ الوثيقتين">💾</button></div>
 <div id="ov" hidden><div id="ovTop"><button data-close="1" aria-label="إغلاق">✕</button><span>عرض الملف (الوثيقتان)</span><button class="p" data-save="cur" aria-label="حفظ هذه الوثيقة">💾</button></div><div id="ovBody"></div></div>
@@ -188,24 +189,11 @@ function defs(){return{d1:today(),d2:today(),h1:"",h2:"",crte:"",poste:"",objet:
 var S;
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
-function load(){
- S=null;var raw=null,oldSession=null;
- try{raw=localStorage.getItem(KEY)}catch(e){}
- if(!raw){try{oldSession=sessionStorage.getItem(KEY)}catch(e){}
-  if(oldSession){raw=oldSession;try{localStorage.setItem(KEY,oldSession)}catch(e){}}
- }
- try{S=raw?JSON.parse(raw):null}catch(e){S=null}
- if(!S||typeof S!=="object"||Array.isArray(S))S=defs();
- var d=defs();Object.keys(d).forEach(function(k){if(S[k]===undefined)S[k]=d[k]});
- if(!Array.isArray(S.tasks))S.tasks=[];
- if(!Array.isArray(S.pk))S.pk=[true,true,true];
- while(S.pk.length<3)S.pk.push(true);
- if(!Array.isArray(S.plan)||S.plan.length!==2||S.plan.some(function(o){return !o||o.on===undefined}))S.plan=d.plan;
- save();
-}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S));return true}catch(e){return false}}
+function load(){S=null;try{var r=sessionStorage.getItem(KEY);S=r?JSON.parse(r):null}catch(e){S=null}
+ if(!S||!S.tasks||!S.pk)S=defs();if(!Array.isArray(S.plan)||S.plan.length!==2||S.plan.some(function(o){return o&&o.on===undefined}))S.plan=[{t:"",on:true},{t:"",on:true}]}
+function save(){try{sessionStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 var F=["d1","d2","h1","h2","poste","objet","autre","act"];
-$("d1").addEventListener("input",function(){var old=S.d1;if(!S.d2||S.d2===old){S.d2=this.value;$("d2").value=this.value;save()}});
+$("d1").addEventListener("input",function(){var old=S.d1;if(!S.d2||S.d2===old){S.d2=this.value;$("d2").value=this.value}});
 F.forEach(function(k){$(k).addEventListener("input",function(){S[k]=this.value;save()})});
 function showObj(){$("objBox").hidden=!(S.poste&&S.poste.trim())}
 function fill(){F.forEach(function(k){$(k).value=S[k]||""});showObj();dTeam();dResp();dPlan();dTasks();rObj();$("autreBox").open=!!(S.autre&&S.autre.trim())}
@@ -294,12 +282,11 @@ function rObj(){var rs=matchR(),h="",seen={};OL=[];
 function exactR(){var p=N(S.poste),o=N(S.objet);if(!p||!o)return[];return allDB().filter(function(r){return N(r.p)===p&&N(r.o)===o})}
 function syncTasks(){var rs=exactR();
  if(rs.length){var key=rs.map(function(r){return r.id}).join(",");
-  if(S.auto!==key){
-   // المرجع يملأ القائمة فقط إذا كانت فارغة؛ لا يمسح أو يستبدل إدخالات المستخدم.
-   if(!Array.isArray(S.tasks)||S.tasks.length===0){var seen={},u=[];rs.forEach(function(r){r.t.forEach(function(x){var k=N(x);if(!seen[k]){seen[k]=1;u.push(x)}})});
-    S.tasks=u.map(function(x){return{t:x,g:0,on:true}})}
+  if(S.auto!==key){var seen={},u=[];rs.forEach(function(r){r.t.forEach(function(x){var k=N(x);if(!seen[k]){seen[k]=1;u.push(x)}})});
+   S.tasks=u.map(function(x){return{t:x,g:0,on:true}});
+   S.plan=[{t:"",on:true},{t:"",on:true}];
    S.auto=key;save();dTasks();dPlan();return}}
- else if(S.auto){S.auto="";save()}
+ else if(S.auto){S.tasks=[];S.plan=[{t:"",on:true},{t:"",on:true}];S.auto="";save();dTasks();dPlan();return}
  rPool()}
 var PLL=[];
 function rPlanPool(){var h="",seen={},have={},ex=exactR();PLL=[];
@@ -390,11 +377,11 @@ function layerClose(n){var i=-1,k;for(k=LAY.length-1;k>=0;k--){if(LAY[k].n===n){
  else{LAY.splice(i,1);L.c()}}
 window.addEventListener("popstate",function(){var L=LAY.pop();if(L)L.c()});
 function snapshot(){return{app:"crte",v:1,date:new Date().toISOString(),lib:LIB,prefs:{pk:S.pk,resp:S.resp||0,autre:S.autre||""}}}
-async function saveBlob(blob,nm){
- var u=URL.createObjectURL(blob),an=document.createElement("a");
- an.href=u;an.download=nm;an.style.display="none";document.body.appendChild(an);an.click();
- setTimeout(function(){URL.revokeObjectURL(u);an.remove()},5000)
-}
+async function saveBlob(blob,nm){var dl=null;try{dl=await claude.use("downloads")}catch(e){}
+ if(dl){await dl.save({filename:nm,data:blob});return}
+ var file=new File([blob],nm,{type:blob.type});
+ if(/iPad|iPhone|iPod/.test(navigator.userAgent)&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file]});return}
+ var u=URL.createObjectURL(blob),an=document.createElement("a");an.href=u;an.download=nm;document.body.appendChild(an);an.click();setTimeout(function(){URL.revokeObjectURL(u);an.remove()},4000)}
 async function doBackup(){var el=$("imsg");
  try{var blob=new Blob([JSON.stringify(snapshot())],{type:"application/json"});
   await saveBlob(blob,"CRTE_backup_"+today()+".json");el.textContent="✅ تم تحميل النسخة الكاملة ("+LIB.length+" ملف مرجعي)"}
@@ -454,11 +441,11 @@ async function makeBlob(){
  z.file("word/document.xml",build(build2(xml)));
  return z.generateAsync({type:"blob",compression:"DEFLATE",mimeType:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"})}
 function fname(){return "CRTE_Fiche_"+(S.d1||new Date().toISOString().slice(0,10))+".docx"}
-async function outFile(blob,nm){
- var u=URL.createObjectURL(blob),an=document.createElement("a");
- an.href=u;an.download=nm;an.style.display="none";document.body.appendChild(an);an.click();
- setTimeout(function(){URL.revokeObjectURL(u);an.remove()},5000)
-}
+async function outFile(blob,nm){var dl=null;try{dl=await claude.use("downloads")}catch(e){}
+ if(dl){await dl.save({filename:nm,data:blob});return}
+ var file=new File([blob],nm,{type:blob.type});
+ if(/iPad|iPhone|iPod/.test(navigator.userAgent)&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file]});return}
+ var u=URL.createObjectURL(blob),an=document.createElement("a");an.href=u;an.download=nm;document.body.appendChild(an);an.click();setTimeout(function(){URL.revokeObjectURL(u);an.remove()},4000)}
 async function saveDoc(){
  msg("");
  try{
@@ -487,7 +474,17 @@ async function viewDoc(){
 }
 function closeView(){layerClose("view")}
 load();fill();
-
+if("serviceWorker" in navigator&&/^https?:/.test(location.protocol))window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})});
+(function(){var box=$("pwaBox"),ev=null;
+ box.innerHTML='<h3>التثبيت</h3><button class="p w" id="ib" hidden>📲 تثبيت التطبيق</button><p class="hint" id="il"></p><p class="hint" dir="ltr" id="iu"></p>';
+ $("iu").textContent=location.href;
+ var sa=window.matchMedia&&matchMedia("(display-mode: standalone)").matches;
+ $("il").textContent=sa?"التطبيق يعمل الآن كتطبيق مثبّت.":"يظهر زر التثبيت هنا فقط إذا سمح Chrome بالتثبيت. إن لم يظهر، فالعنوان أدناه يقع داخل نطاق تطبيق منصّب آخر، أو الملفات غير مكتملة.";
+ window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();ev=e;$("ib").hidden=false;$("il").textContent="جاهز للتثبيت."});
+ $("ib").addEventListener("click",function(){if(!ev)return;ev.prompt();ev.userChoice.then(function(){ev=null;$("ib").hidden=true})});
+ if(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform())$("il").textContent="تطبيق أندرويد أصلي، يتحدث تلقائيا من الإنترنت.";
+ window.addEventListener("appinstalled",function(){$("il").textContent="تم التثبيت ✅"});
+})();
 </script>
 </body>
 </html>
