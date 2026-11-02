@@ -116,8 +116,8 @@ select:focus{outline:2px solid var(--pr)}
  <div class="card"><h2>التاريخ والتوقيت</h2>
   <div class="row"><div><label>Date (من)</label><input type="date" id="d1"></div>
   <div><label>Au (إلى)</label><input type="date" id="d2"></div></div>
-  <div class="row"><div><label>Horaire du</label><input type="time" id="h1" lang="en-GB" dir="ltr" inputmode="numeric"></div>
-  <div><label>à</label><input type="time" id="h2" lang="en-GB" dir="ltr" inputmode="numeric"></div></div>
+  <div class="row"><div><label>Horaire du</label><input type="text" id="h1" dir="ltr" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="HH:MM" aria-label="الساعة بنظام 24 ساعة"></div>
+  <div><label>à</label><input type="text" id="h2" dir="ltr" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="HH:MM" aria-label="الساعة بنظام 24 ساعة"></div></div>
  </div>
 
  <div class="card"><h2>المحطة والموضوع</h2>
@@ -220,6 +220,7 @@ async function load(){
  S=best||defs();
  var d=defs();Object.keys(d).forEach(function(k){if(S[k]===undefined)S[k]=d[k]});
  if(!Array.isArray(S.tasks))S.tasks=[];
+ S.tasks=S.tasks.filter(function(x){return x!=null}).map(function(x){if(typeof x==="string")return {t:x,g:0,on:true};if(typeof x!=="object")return {t:"",g:0,on:true};return {t:String(x.t==null?"":x.t),g:Number(x.g)||0,on:x.on!==false}});
  if(!Array.isArray(S.pk))S.pk=[true,true,true];while(S.pk.length<3)S.pk.push(true);
  if(!Array.isArray(S.plan))S.plan=d.plan;
  if(typeof S.tasksCleared!=="boolean")S.tasksCleared=false;
@@ -239,8 +240,19 @@ document.addEventListener('change',function(){if(S)saveBeforeExit()},true);
 var F=["d1","d2","h1","h2","poste","objet","autre","act"];
 $("d1").addEventListener("input",function(){var old=S.d1;if(!S.d2||S.d2===old){S.d2=this.value;$("d2").value=this.value}});
 F.forEach(function(k){$(k).addEventListener("input",function(){S[k]=this.value;save()})});
+// إدخال الوقت بصيغة 24 ساعة ثابتة، بعيداً عن منتقي الوقت الذي يفرضه Android.
+["h1","h2"].forEach(function(k){var el=$(k);if(!el)return;el.setAttribute("placeholder","HH:MM");el.setAttribute("inputmode","numeric");el.addEventListener("input",function(){var v=this.value.replace(/[^0-9]/g,"").slice(0,4);if(v.length>2)v=v.slice(0,2)+":"+v.slice(2);this.value=v;S[k]=v;save()});el.addEventListener("blur",function(){var v=this.value.trim();if(!v){S[k]="";save();return}var m=v.match(/^(\d{1,2}):(\d{2})$/);if(m){var hh=Number(m[1]),mm=Number(m[2]);if(hh>=0&&hh<=23&&mm>=0&&mm<=59){v=String(hh).padStart(2,"0")+":"+String(mm).padStart(2,"0");this.value=v;S[k]=v;save();return}}this.setCustomValidity("أدخل الوقت بنظام 24 ساعة مثل 08:30 أو 17:45");this.reportValidity();this.setCustomValidity("")})});
 function showObj(){$("objBox").hidden=!(S.poste&&S.poste.trim())}
-function fill(){F.forEach(function(k){$(k).value=S[k]||""});showObj();dTeam();dResp();dPlan();dTasks();rObj();$("autreBox").open=!!(S.autre&&S.autre.trim())}
+function fill(){
+ F.forEach(function(k){var el=$(k);if(el)el.value=S[k]||""});
+ try{showObj()}catch(e){console.warn("showObj",e)}
+ try{dTeam()}catch(e){console.warn("dTeam",e)}
+ try{dResp()}catch(e){console.warn("dResp",e)}
+ try{dPlan()}catch(e){console.warn("dPlan",e)}
+ try{dTasks()}catch(e){console.warn("dTasks",e)}
+ try{rObj()}catch(e){console.warn("rObj",e)}
+ var ab=$("autreBox");if(ab)ab.open=!!(S.autre&&String(S.autre).trim());
+}
 function dTeam(){var h="";NAMES.forEach(function(n,i){
  h+='<label class="tm"><input type="checkbox" data-pk="'+i+'"'+(S.pk[i]?" checked":"")+'><span dir="ltr">'+esc(n)+'</span></label>'});
  $("team").innerHTML=h}
@@ -264,6 +276,7 @@ function dPlan(){
 function dTasks(){
  // قائمة الأشغال مستقلة عن حقلي Poste وObjet؛ لا تُخفى عند تغيّر المطابقة.
  if(!Array.isArray(S.tasks))S.tasks=[];
+ S.tasks=S.tasks.filter(function(x){return x!=null}).map(function(x){if(typeof x==="string")return {t:x,g:0,on:true};if(typeof x!=="object")return {t:"",g:0,on:true};return {t:String(x.t==null?"":x.t),g:Number(x.g)||0,on:x.on!==false}});
  var h='<div class="sh" style="display:flex;justify-content:space-between;gap:8px;align-items:center"><span>قائمة الأشغال المحفوظة</span><span>'+S.tasks.length+' بند</span></div>';
  if(!S.tasks.length){
   h+='<div class="hint" style="padding:12px;border:1px dashed var(--line,#aaa);border-radius:10px">لا توجد أشغال حالياً. اختر موضوعاً مرجعياً أو اضغط «إضافة شغل». ستبقى هذه القائمة ظاهرة ولن تُملأ من جديد بعد مسحها إلا باختيارك.</div>';
@@ -324,18 +337,15 @@ var PL=[],OL=[],TL=[],pickedP="";
 var LIB=[];
 function nid(){return "i"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 function libSave(){try{localStorage.setItem("crte_lib_v2",JSON.stringify(LIB))}catch(e){}}
-function libLoad(){var l=null;try{l=JSON.parse(localStorage.getItem("crte_lib_v2")||"null")}catch(e){}
- if(Array.isArray(l)){LIB=l;
-  var bi=null;try{bi=localStorage.getItem("crte_lib_bi")}catch(e){}
-  if(bi!=="19"){
-   DB.forEach(function(r){var k=keyOf(r),e=null,i;for(i=0;i<LIB.length;i++){if(keyOf(LIB[i])===k){e=LIB[i];break}}
-    if(e){if((!e.c||!e.c.length)&&r.c&&r.c.length)e.c=r.c.slice()}
-    else if(r.f==="preparation_tazaII_TRn1.doc")LIB.push({id:nid(),f:r.f,p:r.p,o:r.o,t:r.t.slice(),c:(r.c||[]).slice()})});
-   libSave();try{localStorage.setItem("crte_lib_bi","19")}catch(e){}}
-  return}
- LIB=DB.map(function(r){return{id:nid(),f:r.f||"",p:r.p,o:r.o,t:r.t.slice(),c:(r.c||[]).slice()}});
- try{var u=JSON.parse(localStorage.getItem("crte_user_db_v1")||"[]");if(Array.isArray(u))u.forEach(function(r){if(r&&r.p&&r.t)LIB.push({id:nid(),f:r.f||"",p:r.p,o:r.o||"",t:r.t})})}catch(e){}
- libSave()}
+function libLoad(){
+ var stored=null;try{stored=JSON.parse(localStorage.getItem("crte_lib_v2")||"null")}catch(e){stored=null}
+ // Validate stored library entries; malformed/empty legacy storage must never hide embedded references.
+ LIB=Array.isArray(stored)?stored.filter(function(r){return r&&typeof r==="object"&&r.p&&r.o&&Array.isArray(r.t)}):[];
+ var byKey={};LIB.forEach(function(r){if(!r.id)r.id=nid();r.t=r.t.map(function(x){return String(x)});r.c=Array.isArray(r.c)?r.c:[];byKey[keyOf(r)]=r});
+ DB.forEach(function(r){var k=keyOf(r),old=byKey[k];if(!old){var copy={id:nid(),f:r.f||"",p:r.p,o:r.o||"",t:(r.t||[]).slice(),c:(r.c||[]).slice()};LIB.push(copy);byKey[k]=copy}else{if(!Array.isArray(old.t)||!old.t.length)old.t=(r.t||[]).slice();if(!Array.isArray(old.c)||!old.c.length)old.c=(r.c||[]).slice()}});
+ try{var u=JSON.parse(localStorage.getItem("crte_user_db_v1")||"[]");if(Array.isArray(u))u.forEach(function(r){if(r&&r.p&&r.o&&Array.isArray(r.t)){var k=keyOf(r);if(!byKey[k]){var x={id:nid(),f:r.f||"",p:String(r.p),o:String(r.o),t:r.t.map(String),c:[]};LIB.push(x);byKey[k]=x}}})}catch(e){}
+ libSave();try{localStorage.setItem("crte_lib_bi","20")}catch(e){}
+}
 libLoad();
 function allDB(){return LIB}
 function posts(){var m={};allDB().forEach(function(r){var k=N(r.p);if(!m[k])m[k]={k:k,p:r.p,n:0};m[k].n++;if(r.p.length>m[k].p.length)m[k].p=r.p});
@@ -380,9 +390,9 @@ function rPlanPool(){
 function rPool(){var h="",seen={},have={},ex=exactR();TL=[];
  if(ex.length){var pk=N(S.poste),exid={};ex.forEach(function(r){exid[r.id]=1});
   S.tasks.forEach(function(o){have[N(o.t)]=1});
-  allDB().forEach(function(r){if(N(r.p)===pk)r.t.forEach(function(x){var k=N(x);if(!seen[k]&&!have[k]){seen[k]=1;TL.push(x)}})})}
+  allDB().forEach(function(r){if(r&&N(r.p)===pk&&Array.isArray(r.t))r.t.forEach(function(x){var k=N(x);if(k&&!seen[k]&&!have[k]){seen[k]=1;TL.push(String(x))}})})}
  if(TL.length){h='<div class="sh">أشغال إضافية من تقارير أخرى لنفس المحطة، اضغط لإضافتها</div><button data-tall="1">➕ إضافة كل الأشغال الإضافية ('+TL.length+')</button>';TL.forEach(function(x,i){h+='<button data-tp="'+i+'">➕ '+esc(x)+'</button>'})}
- $("tPool").innerHTML=h;rPlanPool()}
+ if($("tPool"))$("tPool").innerHTML=h;rPlanPool()}
 $("poste").addEventListener("input",function(){
  pickedP="";S.poste=this.value;
  if(!(S.poste||"").trim()&&S.objet){S.objet="";$("objet").value="";}
@@ -629,7 +639,7 @@ function closeView(){layerClose("view")}
   var panel=document.createElement("div");
   panel.dir="rtl";
   panel.style.cssText="margin:16px;padding:18px;border:1px solid #d97706;border-radius:12px;background:#fff7ed;color:#7c2d12;font:16px sans-serif;line-height:1.8";
-  panel.innerHTML="<b>تعذر تشغيل جزء من واجهة CRTE.</b><br>لم يتم حذف البيانات المحفوظة. السبب التقني: "+String((bootError&&bootError.message)||bootError)+"<br>يمكنك تحديث الصفحة أو إرسال هذه الرسالة للدعم.";
+  panel.textContent="تعذر تشغيل جزء من واجهة CRTE. لم يتم حذف البيانات المحفوظة. السبب التقني: "+String((bootError&&bootError.message)||bootError)+". حدّث الصفحة أو أرسل هذه الرسالة للدعم.";
   root.insertBefore(panel,root.firstChild);
  }
 }
