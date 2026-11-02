@@ -137,7 +137,10 @@ select:focus{outline:2px solid var(--pr)}
  <div class="card"><h2>الأشغال والاختبارات</h2>
   <p class="hint">تُستخرج الأشغال والاختبارات من المرجع الأصلي Compte Rendu des Travaux et essais عند تطابق Poste وObjet معاً. يمكنك تعديل Objet دون أن تختفي القائمة الحالية. كل تعديل يُحفظ تلقائياً على هذا الجهاز.</p>
   <div id="tasks"></div>
-  <button data-addtask="1">➕ إضافة شغل</button>
+  <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">
+   <button data-addtask="1">➕ إضافة شغل</button>
+   <button class="d" data-clear-tasks="1" type="button">🗑️ مسح جميع الأشغال</button>
+  </div>
   <div class="sg" id="tPool"></div>
  <div class="card"><h2>Définition du plan de contrôle</h2>
   <p class="hint">اختياري: تُكتب البنود في خانة 7 من ورقة التحضير، وإن لم تضف شيئا تبقى بنود الورقة الأصلية كما هي.</p>
@@ -258,9 +261,21 @@ function dPlan(){
  // لا تعرض اقتراحات أو اختيارات تحت هاتين الخانتين.
  $("pPool").innerHTML="";
 }
-function dTasks(){var h="";S.tasks.forEach(function(o,i){
- h+='<div class="item"><input type="checkbox" data-ti="'+i+'"'+(o.on?" checked":"")+'><input type="text" dir="ltr" data-tt="'+i+'" value="'+esc(o.t)+'"><button class="d" data-td="'+i+'">✕</button></div>'});
- $("tasks").innerHTML=h;rPool()}
+function dTasks(){
+ // قائمة الأشغال مستقلة عن حقلي Poste وObjet؛ لا تُخفى عند تغيّر المطابقة.
+ if(!Array.isArray(S.tasks))S.tasks=[];
+ var h='<div class="sh" style="display:flex;justify-content:space-between;gap:8px;align-items:center"><span>قائمة الأشغال المحفوظة</span><span>'+S.tasks.length+' بند</span></div>';
+ if(!S.tasks.length){
+  h+='<div class="hint" style="padding:12px;border:1px dashed var(--line,#aaa);border-radius:10px">لا توجد أشغال حالياً. اختر موضوعاً مرجعياً أو اضغط «إضافة شغل». ستبقى هذه القائمة ظاهرة ولن تُملأ من جديد بعد مسحها إلا باختيارك.</div>';
+ }else{
+  S.tasks.forEach(function(o,i){
+   if(typeof o==="string")o=S.tasks[i]={t:o,g:0,on:true};
+   h+='<div class="item"><input aria-label="إدراج الشغل في التقرير" type="checkbox" data-ti="'+i+'"'+(o.on!==false?" checked":"")+'><input aria-label="نص الشغل" type="text" dir="auto" data-tt="'+i+'" value="'+esc(o.t||'')+'"><button class="d" type="button" aria-label="حذف هذا الشغل" data-td="'+i+'">✕</button></div>';
+  });
+ }
+ $("tasks").innerHTML=h;
+ rPool();
+}
 document.addEventListener("click",function(e){
  var t=e.target;
  var b=t.closest?t.closest("button"):null;if(!b)return;
@@ -288,6 +303,11 @@ document.addEventListener("click",function(e){
  if(ob!==null){var r=OL[+ob];if(!r)return;S.objet=r.o;$("objet").value=r.o;S.tasksCleared=false;S.tasks=(r.t||[]).map(function(z){return{t:String(z),g:0,on:true}});S.auto=exactR().map(function(x){return x.id}).join(",");S.plan=[{t:"",on:true},{t:"",on:true}];save();dTasks();dPlan();return}
  if(tp!==null){S.tasks.push({t:TL[+tp],g:S.tasks.length?S.tasks[S.tasks.length-1].g:0,on:true});save();dTasks();return}
  if(b.getAttribute("data-addtask")){S.tasksCleared=false;S.tasks.push({t:"",g:S.tasks.length?S.tasks[S.tasks.length-1].g:0,on:true});save();dTasks();return}
+ if(b.getAttribute("data-clear-tasks")){
+  if(!S.tasks.length)return;
+  if(!confirm("هل تريد مسح جميع الأشغال والاختبارات؟ لن تُحذف إلا بعد تأكيدك."))return;
+  S.tasks=[];S.tasksCleared=true;S.auto="";save();dTasks();return;
+ }
  var d=b.getAttribute("data-td");if(d!==null){S.tasks.splice(+d,1);if(!S.tasks.length)S.tasksCleared=true;save();dTasks();return}
  if(b.getAttribute("data-reset")){if(!confirm("مسح كل الإدخال وبدء تقرير جديد؟"))return;S=defs();save();fill();window.scrollTo(0,0);return}
  var sv=b.getAttribute("data-save");if(sv){saveDoc();return}
@@ -295,9 +315,9 @@ document.addEventListener("click",function(e){
  if(b.getAttribute("data-close"))closeView()});
 $("plan").addEventListener("input",function(e){var i=e.target.getAttribute("data-pt");if(i!==null){S.plan[+i].t=e.target.value;save()}});
 
-$("tasks").addEventListener("input",function(e){var i=e.target.getAttribute("data-tt");if(i!==null){S.tasks[+i].t=e.target.value;save()}});
+$("tasks").addEventListener("input",function(e){var i=e.target.getAttribute("data-tt");if(i!==null&&S.tasks[+i]){S.tasks[+i].t=e.target.value;save()}});
 $("team").addEventListener("change",function(e){var i=e.target.getAttribute("data-pk");if(i!==null){S.pk[+i]=e.target.checked;save()}});
-$("tasks").addEventListener("change",function(e){var i=e.target.getAttribute("data-ti");if(i!==null){S.tasks[+i].on=e.target.checked;save()}});
+$("tasks").addEventListener("change",function(e){var i=e.target.getAttribute("data-ti");if(i!==null&&S.tasks[+i]){S.tasks[+i].on=e.target.checked;save()}});
 
 function N(s){return String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g,"")}
 var PL=[],OL=[],TL=[],pickedP="";
@@ -447,11 +467,13 @@ function layerClose(n){var i=-1,k;for(k=LAY.length-1;k>=0;k--){if(LAY[k].n===n){
  else{LAY.splice(i,1);L.c()}}
 window.addEventListener("popstate",function(){var L=LAY.pop();if(L)L.c()});
 function snapshot(){return{app:"crte",v:1,date:new Date().toISOString(),lib:LIB,prefs:{pk:S.pk,resp:S.resp||0,autre:S.autre||""}}}
-async function saveBlob(blob,nm){var dl=null;try{dl=await claude.use("downloads")}catch(e){}
- if(dl){await dl.save({filename:nm,data:blob});return}
- var file=new File([blob],nm,{type:blob.type});
- if(/iPad|iPhone|iPod/.test(navigator.userAgent)&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file]});return}
- var u=URL.createObjectURL(blob),an=document.createElement("a");an.href=u;an.download=nm;document.body.appendChild(an);an.click();setTimeout(function(){URL.revokeObjectURL(u);an.remove()},4000)}
+async function saveBlob(blob,nm){
+ // تنزيل مباشر من المتصفح: لا يعتمد على مكتبة downloads أو ملفات Library خارجية.
+ var u=URL.createObjectURL(blob),an=document.createElement("a");
+ an.href=u;an.download=nm;an.style.display="none";document.body.appendChild(an);
+ an.click();
+ setTimeout(function(){URL.revokeObjectURL(u);an.remove()},10000);
+}
 async function doBackup(){var el=$("imsg");
  try{var blob=new Blob([JSON.stringify(snapshot())],{type:"application/json"});
   await saveBlob(blob,"CRTE_backup_"+today()+".json");el.textContent="✅ تم تحميل النسخة الكاملة ("+LIB.length+" ملف مرجعي)"}
@@ -511,11 +533,13 @@ async function makeBlob(){
  z.file("word/document.xml",build(build2(xml)));
  return z.generateAsync({type:"blob",compression:"DEFLATE",mimeType:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"})}
 function fname(){return "CRTE_Fiche_"+(S.d1||new Date().toISOString().slice(0,10))+".docx"}
-async function outFile(blob,nm){var dl=null;try{dl=await claude.use("downloads")}catch(e){}
- if(dl){await dl.save({filename:nm,data:blob});return}
- var file=new File([blob],nm,{type:blob.type});
- if(/iPad|iPhone|iPod/.test(navigator.userAgent)&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file]});return}
- var u=URL.createObjectURL(blob),an=document.createElement("a");an.href=u;an.download=nm;document.body.appendChild(an);an.click();setTimeout(function(){URL.revokeObjectURL(u);an.remove()},4000)}
+async function outFile(blob,nm){
+ // تنزيل مباشر من المتصفح لتفادي خطأ Library file not found.
+ var u=URL.createObjectURL(blob),an=document.createElement("a");
+ an.href=u;an.download=nm;an.style.display="none";document.body.appendChild(an);
+ an.click();
+ setTimeout(function(){URL.revokeObjectURL(u);an.remove()},10000);
+}
 async function saveDoc(){
  msg("");
  try{
