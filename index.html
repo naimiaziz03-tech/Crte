@@ -189,9 +189,31 @@ function defs(){return{d1:today(),d2:today(),h1:"",h2:"",crte:"",poste:"",objet:
 var S;
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
-function load(){S=null;try{var r=sessionStorage.getItem(KEY);S=r?JSON.parse(r):null}catch(e){S=null}
- if(!S||!S.tasks||!S.pk)S=defs();if(!Array.isArray(S.plan)||S.plan.length!==2||S.plan.some(function(o){return o&&o.on===undefined}))S.plan=[{t:"",on:true},{t:"",on:true}]}
-function save(){try{sessionStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function load(){
+ S=null;
+ // التخزين الدائم هو الأساس، مع ترحيل بيانات الجلسة القديمة إن وُجدت.
+ try{
+   var r=localStorage.getItem(KEY);
+   if(r){S=JSON.parse(r);}
+   else{
+     var old=sessionStorage.getItem(KEY);
+     if(old){S=JSON.parse(old);localStorage.setItem(KEY,old);}
+   }
+ }catch(e){S=null;}
+ if(!S||!S.tasks||!S.pk)S=defs();
+ if(!Array.isArray(S.plan)||S.plan.length!==2||S.plan.some(function(o){return o&&o.on===undefined}))S.plan=[{t:"",on:true},{t:"",on:true}];
+}
+function save(){
+ try{
+   localStorage.setItem(KEY,JSON.stringify(S));
+   // نخلي نسخة الجلسة متزامنة مؤقتاً للتوافق، لكن الاسترجاع دائماً من التخزين الدائم.
+   try{sessionStorage.setItem(KEY,JSON.stringify(S));}catch(e){}
+ }catch(e){
+   console.error("تعذر حفظ بيانات التطبيق محلياً",e);
+ }
+}
+window.addEventListener("pagehide",function(){if(S)save();});
+document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden"&&S)save();});
 var F=["d1","d2","h1","h2","poste","objet","autre","act"];
 $("d1").addEventListener("input",function(){var old=S.d1;if(!S.d2||S.d2===old){S.d2=this.value;$("d2").value=this.value}});
 F.forEach(function(k){$(k).addEventListener("input",function(){S[k]=this.value;save()})});
