@@ -532,16 +532,41 @@ async function viewDoc(){
  }catch(e){c.innerHTML='<p style="color:#fff;padding:16px">'+esc((e&&e.message)||e)+'</p>'}
 }
 function closeView(){layerClose("view")}
-// تشغيل آمن: لا نعيد تسجيل Service Worker قديم قد يعرض صفحة فارغة أو نسخة تالفة.
-// إذا كان هناك Service Worker سابق تابع لهذا الموقع، نوقفه حتى تُحمّل الصفحة مباشرة من GitHub Pages.
+// تسجيل Service Worker مع تحديث تلقائي لنسخة التطبيق المنشورة على GitHub Pages.
 (function(){
- try{
-  if("serviceWorker" in navigator){
-   navigator.serviceWorker.getRegistrations().then(function(regs){
-    regs.forEach(function(reg){reg.unregister().catch(function(){});});
-   }).catch(function(){});
+ if(!("serviceWorker" in navigator)) return;
+ var hadController = !!navigator.serviceWorker.controller;
+ var reloading = false;
+ navigator.serviceWorker.addEventListener("controllerchange", function(){
+  // لا نعيد تحميل الصفحة عند أول تثبيت؛ نعيدها فقط عند انتقالها إلى نسخة محدثة.
+  if(hadController && !reloading){
+   reloading = true;
+   window.location.reload();
   }
- }catch(e){}
+ });
+ window.addEventListener("load", function(){
+  navigator.serviceWorker.register("./sw.js", {scope:"./", updateViaCache:"none"})
+   .then(function(reg){
+    // تحقق من وجود نسخة جديدة عند فتح التطبيق، ثم عند عودة التطبيق للواجهة.
+    reg.update().catch(function(){});
+    document.addEventListener("visibilitychange", function(){
+     if(document.visibilityState === "visible") reg.update().catch(function(){});
+    });
+    window.addEventListener("focus", function(){ reg.update().catch(function(){}); });
+    // إذا كانت هناك نسخة تنتظر التفعيل، فعّلها فوراً.
+    if(reg.waiting) reg.waiting.postMessage({type:"SKIP_WAITING"});
+    reg.addEventListener("updatefound", function(){
+     var worker = reg.installing;
+     if(!worker) return;
+     worker.addEventListener("statechange", function(){
+      if(worker.state === "installed" && navigator.serviceWorker.controller){
+       worker.postMessage({type:"SKIP_WAITING"});
+      }
+     });
+    });
+   })
+   .catch(function(err){ console.warn("CRTE update registration failed", err); });
+ });
 })();
 (async function(){
  try{
