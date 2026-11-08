@@ -61,6 +61,10 @@ button.d{color:var(--dg)}
 .task-suggestion-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;color:var(--mu);padding:6px 10px;background:var(--bg);border-bottom:1px solid var(--bd)}
 .task-suggestion-toggle{width:30px!important;min-width:30px;padding:2px 6px!important;border:1px solid var(--bd)!important;border-radius:7px!important;background:var(--card)!important;color:var(--tx)!important;font-size:17px;line-height:1.2;text-align:center!important}
 .task-suggestion-body[hidden]{display:none!important}
+/* سهم اقتراحات المواضيع في نفس الموضع المحدد من المستخدم */
+.obj-suggestion-head{display:flex;align-items:center;gap:8px;direction:rtl;padding:6px 10px;background:var(--bg);color:var(--mu);border-bottom:1px solid var(--bd);font-size:13px;line-height:1.55}
+.obj-suggestion-title{flex:1;min-width:0;text-align:right}
+.sg button.obj-suggestion-toggle{display:inline-flex!important;align-items:center;justify-content:center;flex:0 0 28px;width:28px!important;min-width:28px;height:28px;padding:0!important;border:1px solid var(--bd)!important;border-radius:50%!important;background:var(--card)!important;color:var(--pr)!important;font-size:19px;font-weight:700;line-height:1;text-align:center!important}
 .sg button{display:block;width:100%;text-align:left;direction:ltr;border:0;border-top:1px solid var(--bd);border-radius:0;padding:10px;background:var(--card)}
 .sg button small{display:block;color:var(--mu);font-size:12px;direction:rtl;text-align:right}
 .fab{position:fixed;inset:auto 0 calc(12px + env(safe-area-inset-bottom,0px)) 0;display:flex;gap:12px;justify-content:center;z-index:6;pointer-events:none}
@@ -285,7 +289,7 @@ function dPlan(){
  // لا تعرض اقتراحات أو اختيارات تحت هاتين الخانتين.
  if($("pPool"))$("pPool").innerHTML="";
 }
-var taskReorderMode=false, taskMenuOpen=false, taskSuggestionsCollapsed=false;
+var taskReorderMode=false, taskMenuOpen=false, taskSuggestionsCollapsed=false, objectSuggestionsCollapsed=false;
 function dTasks(){
  // قائمة الأشغال مستقلة عن حقلي Poste وObjet؛ لا تُخفى عند تغيّر المطابقة.
  if(!Array.isArray(S.tasks))S.tasks=[];
@@ -315,6 +319,7 @@ document.addEventListener("click",function(e){
  if(mm!==null){if(mm==="1"){$("mn").hidden=false;rList();layerOpen("menu",function(){$("mn").hidden=true})}else layerClose("menu");return}
  if(b.getAttribute("data-tasks-menu")!==null){taskMenuOpen=!taskMenuOpen;dTasks();return}
  if(b.getAttribute("data-task-suggestions-toggle")!==null){taskSuggestionsCollapsed=!taskSuggestionsCollapsed;rPool();return}
+ if(b.getAttribute("data-obj-suggestions-toggle")!==null){objectSuggestionsCollapsed=!objectSuggestionsCollapsed;rObj();return}
  if(b.getAttribute("data-reorder-toggle")!==null){taskReorderMode=!taskReorderMode;taskMenuOpen=false;dTasks();return}
  var mi=b.getAttribute("data-move-task");
  if(mi!==null){var from=Number(mi),delta=Number(b.getAttribute("data-delta")),to=from+delta;if(from>=0&&from<S.tasks.length&&to>=0&&to<S.tasks.length){var moved=S.tasks.splice(from,1)[0];S.tasks.splice(to,0,moved);save();dTasks()}return}
@@ -382,7 +387,10 @@ function rPost(){var q=N(S.poste),h="";PL=[];
  $("pSug").innerHTML=h}
 function rObj(){var rs=matchR(),h="",seen={};OL=[];
  rs.forEach(function(r){var k=N(r.o);if(r.o&&!seen[k]){seen[k]=1;OL.push(r)}});
- if(OL.length){h='<div class="sh">مواضيع سابقة لنفس المحطة. عند اختيار الموضوع تظهر أشغاله تلقائيا ويمكنك تعديلها</div>';OL.forEach(function(r,i){h+='<button data-ob="'+i+'">'+esc(r.o)+'<small>'+esc(r.f||"")+' · '+r.t.length+' أشغال</small></button>'})}
+ if(OL.length){
+  h='<div class="obj-suggestion-head"><button type="button" class="obj-suggestion-toggle" data-obj-suggestions-toggle="1" aria-label="إظهار أو إخفاء اقتراحات المواضيع" aria-expanded="'+(!objectSuggestionsCollapsed?'true':'false')+'" title="إظهار أو إخفاء الاقتراحات">'+(objectSuggestionsCollapsed?'▸':'▾')+'</button><span class="obj-suggestion-title">مواضيع سابقة لنفس المحطة. عند اختيار الموضوع تظهر أشغاله تلقائيا ويمكنك تعديلها</span></div>';
+  if(!objectSuggestionsCollapsed){OL.forEach(function(r,i){h+='<button type="button" data-ob="'+i+'">'+esc(r.o)+'<small>'+esc(r.f||"")+' · '+r.t.length+' أشغال</small></button>'})}
+ }
  $("oSug").innerHTML=h;
  // إذا كانت للمحطة نتيجة مرجعية واحدة فقط، نملأ Objet والأشغال تلقائيا دون اختيار يدوي.
  if(!S.objet&&OL.length===1){
