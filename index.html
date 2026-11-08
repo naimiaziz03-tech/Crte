@@ -36,6 +36,15 @@ button.d{color:var(--dg)}
 .item input[type=checkbox]{width:22px;height:22px;flex:none}
 .item input[type=text]{flex:1}
 .item button{flex:none;padding:7px 10px}
+.task-head{display:flex;justify-content:space-between;gap:8px;align-items:center;position:relative}
+.task-head-title{font-weight:600}
+.task-menu-wrap{position:relative;flex:none}
+.task-menu-trigger{font-size:23px;line-height:1;min-width:42px;padding:5px 10px}
+.task-menu-pop{position:absolute;z-index:8;top:calc(100% + 4px);inset-inline-end:0;min-width:180px;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:5px;box-shadow:0 5px 18px rgba(0,0,0,.18)}
+.task-menu-pop button{display:block;width:100%;text-align:right;border:0;border-radius:7px;padding:10px}
+.task-order-controls{display:flex;gap:4px;flex:none}
+.task-order-controls button{min-width:38px;padding:6px 9px;font-size:18px}
+.task-order-note{font-size:12px;color:var(--mu);padding:6px 2px}
 .bar{position:fixed;inset:auto 0 0 0;background:var(--card);border-top:1px solid var(--bd);padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;z-index:6}
 .bar button{width:100%;max-width:420px;padding:13px}
 .hint{font-size:12px;color:var(--mu);margin:0 0 6px}
@@ -49,6 +58,9 @@ button.d{color:var(--dg)}
 .sg{border:1px solid var(--bd);border-radius:10px;background:var(--card);margin-top:6px;overflow:hidden}
 .sg:empty{display:none}
 .sg .sh{font-size:12px;color:var(--mu);padding:6px 10px;background:var(--bg)}
+.task-suggestion-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;color:var(--mu);padding:6px 10px;background:var(--bg);border-bottom:1px solid var(--bd)}
+.task-suggestion-toggle{width:30px!important;min-width:30px;padding:2px 6px!important;border:1px solid var(--bd)!important;border-radius:7px!important;background:var(--card)!important;color:var(--tx)!important;font-size:17px;line-height:1.2;text-align:center!important}
+.task-suggestion-body[hidden]{display:none!important}
 .sg button{display:block;width:100%;text-align:left;direction:ltr;border:0;border-top:1px solid var(--bd);border-radius:0;padding:10px;background:var(--card)}
 .sg button small{display:block;color:var(--mu);font-size:12px;direction:rtl;text-align:right}
 .fab{position:fixed;inset:auto 0 calc(12px + env(safe-area-inset-bottom,0px)) 0;display:flex;gap:12px;justify-content:center;z-index:6;pointer-events:none}
@@ -273,27 +285,39 @@ function dPlan(){
  // لا تعرض اقتراحات أو اختيارات تحت هاتين الخانتين.
  if($("pPool"))$("pPool").innerHTML="";
 }
+var taskReorderMode=false, taskMenuOpen=false, taskSuggestionsCollapsed=false;
 function dTasks(){
  // قائمة الأشغال مستقلة عن حقلي Poste وObjet؛ لا تُخفى عند تغيّر المطابقة.
  if(!Array.isArray(S.tasks))S.tasks=[];
  S.tasks=S.tasks.filter(function(x){return x!=null}).map(function(x){if(typeof x==="string")return {t:x,g:0,on:true};if(typeof x!=="object")return {t:"",g:0,on:true};return {t:String(x.t==null?"":x.t),g:Number(x.g)||0,on:x.on!==false}});
- var h='<div class="sh" style="display:flex;justify-content:space-between;gap:8px;align-items:center"><span>قائمة الأشغال المحفوظة</span><span>'+S.tasks.length+' بند</span></div>';
+ var h='<div class="task-head"><span class="task-head-title">قائمة الأشغال المحفوظة ('+S.tasks.length+' بند)</span><div class="task-menu-wrap"><button type="button" class="task-menu-trigger" data-tasks-menu="1" aria-label="خيارات الأشغال" aria-expanded="'+(taskMenuOpen?'true':'false')+'">⋮</button>';
+ if(taskMenuOpen){h+='<div class="task-menu-pop"><button type="button" data-reorder-toggle="1">'+(taskReorderMode?'✓ إنهاء ترتيب البنود':'↕ تعديل ترتيب البنود')+'</button><button type="button" data-addtask="1">＋ إضافة شغل</button><button type="button" data-clear-tasks="1">مسح جميع الأشغال</button></div>'}
+ h+='</div></div>';
+ if(taskReorderMode)h+='<div class="task-order-note">استعمل السهمين لتغيير ترتيب البند. الترتيب الجديد يُحفظ تلقائياً.</div>';
  if(!S.tasks.length){
   h+='<div class="hint" style="padding:12px;border:1px dashed var(--line,#aaa);border-radius:10px">لا توجد أشغال حالياً. اختر موضوعاً مرجعياً أو اضغط «إضافة شغل». ستبقى هذه القائمة ظاهرة ولن تُملأ من جديد بعد مسحها إلا باختيارك.</div>';
  }else{
   S.tasks.forEach(function(o,i){
    if(typeof o==="string")o=S.tasks[i]={t:o,g:0,on:true};
-   h+='<div class="item"><input aria-label="إدراج الشغل في التقرير" type="checkbox" data-ti="'+i+'"'+(o.on!==false?" checked":"")+'><input aria-label="نص الشغل" type="text" dir="auto" data-tt="'+i+'" value="'+esc(o.t||'')+'"><button class="d" type="button" aria-label="حذف هذا الشغل" data-td="'+i+'">✕</button></div>';
+   h+='<div class="item"><input aria-label="إدراج الشغل في التقرير" type="checkbox" data-ti="'+i+'"'+(o.on!==false?" checked":"")+'><input aria-label="نص الشغل" type="text" dir="auto" data-tt="'+i+'" value="'+esc(o.t||'')+'">';
+   if(taskReorderMode){h+='<div class="task-order-controls"><button type="button" data-move-task="'+i+'" data-delta="-1" aria-label="رفع البند" title="رفع"'+(i===0?' disabled':'')+'>↑</button><button type="button" data-move-task="'+i+'" data-delta="1" aria-label="خفض البند" title="خفض"'+(i===S.tasks.length-1?' disabled':'')+'>↓</button></div>'}
+   h+='<button class="d" type="button" aria-label="حذف هذا الشغل" data-td="'+i+'">✕</button></div>';
   });
  }
  $("tasks").innerHTML=h;
  rPool();
 }
+
 document.addEventListener("click",function(e){
  var t=e.target;
  var b=t.closest?t.closest("button"):null;if(!b)return;
  var mm=b.getAttribute("data-menu");
  if(mm!==null){if(mm==="1"){$("mn").hidden=false;rList();layerOpen("menu",function(){$("mn").hidden=true})}else layerClose("menu");return}
+ if(b.getAttribute("data-tasks-menu")!==null){taskMenuOpen=!taskMenuOpen;dTasks();return}
+ if(b.getAttribute("data-task-suggestions-toggle")!==null){taskSuggestionsCollapsed=!taskSuggestionsCollapsed;rPool();return}
+ if(b.getAttribute("data-reorder-toggle")!==null){taskReorderMode=!taskReorderMode;taskMenuOpen=false;dTasks();return}
+ var mi=b.getAttribute("data-move-task");
+ if(mi!==null){var from=Number(mi),delta=Number(b.getAttribute("data-delta")),to=from+delta;if(from>=0&&from<S.tasks.length&&to>=0&&to<S.tasks.length){var moved=S.tasks.splice(from,1)[0];S.tasks.splice(to,0,moved);save();dTasks()}return}
  if(b.getAttribute("data-addfiles")){$("fi").click();return}
  if(b.getAttribute("data-bk")){backupAll();return}
  if(b.getAttribute("data-rs")){$("fr").click();return}
@@ -391,7 +415,10 @@ function rPool(){var h="",seen={},have={},ex=exactR();TL=[];
  if(ex.length){var pk=N(S.poste),exid={};ex.forEach(function(r){exid[r.id]=1});
   S.tasks.forEach(function(o){have[N(o.t)]=1});
   allDB().forEach(function(r){if(r&&N(r.p)===pk&&Array.isArray(r.t))r.t.forEach(function(x){var k=N(x);if(k&&!seen[k]&&!have[k]){seen[k]=1;TL.push(String(x))}})})}
- if(TL.length){h='<div class="sh">أشغال إضافية من تقارير أخرى لنفس المحطة، اضغط لإضافتها</div><button data-tall="1">➕ إضافة كل الأشغال الإضافية ('+TL.length+')</button>';TL.forEach(function(x,i){h+='<button data-tp="'+i+'">➕ '+esc(x)+'</button>'})}
+ if(TL.length){
+  h='<div class="task-suggestion-head"><span>اقتراحات الأشغال الإضافية ('+TL.length+')</span><button type="button" class="task-suggestion-toggle" data-task-suggestions-toggle="1" aria-label="إظهار أو إخفاء اقتراحات الأشغال" aria-expanded="'+(!taskSuggestionsCollapsed?'true':'false')+'" title="إظهار أو إخفاء الاقتراحات">'+(taskSuggestionsCollapsed?'▸':'▾')+'</button></div>';
+  if(!taskSuggestionsCollapsed){h+='<div class="task-suggestion-body"><div class="sh">اضغط على أي شغل لإضافته إلى القائمة المحفوظة</div><button type="button" data-tall="1">➕ إضافة كل الأشغال الإضافية ('+TL.length+')</button>';TL.forEach(function(x,i){h+='<button type="button" data-tp="'+i+'">➕ '+esc(x)+'</button>'});h+='</div>'}
+ }
  if($("tPool"))$("tPool").innerHTML=h;rPlanPool()}
 $("poste").addEventListener("input",function(){
  pickedP="";S.poste=this.value;
