@@ -543,6 +543,19 @@ function rep(s,k,v){return s.split("@@"+k+"@@").join(v)}
 function teamArr(){var tm=NAMES.filter(function(n,i){return S.pk[i]});if(S.autre&&S.autre.trim())tm.push(S.autre.trim());return tm}
 function fmtH(v){return v&&v.indexOf(":")>0?v.replace(":","H"):""}
 function hh(v){return v&&v.indexOf(":")>0?v.replace(":","H"):""}
+function prepReportDate(raw){
+ // Date de préparation = veille de la date du compte-rendu.
+ // Si la veille tombe samedi ou dimanche, remonter au vendredi.
+ var d;
+ if(/^\d{4}-\d{2}-\d{2}$/.test(String(raw||""))){
+  var a=String(raw).split("-"); d=new Date(Number(a[0]),Number(a[1])-1,Number(a[2]));
+ }else{d=new Date(); d.setHours(0,0,0,0);}
+ if(isNaN(d.getTime())){d=new Date();d.setHours(0,0,0,0);}
+ d.setDate(d.getDate()-1);
+ if(d.getDay()===6)d.setDate(d.getDate()-1); // samedi -> vendredi
+ else if(d.getDay()===0)d.setDate(d.getDate()-2); // dimanche -> vendredi
+ return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);
+}
 function build2(doc){
  var tk=S.tasks.filter(function(o){return o.on&&o.t.trim()}).map(function(o){return o.t});
  doc=doc.split("@@TASKPARAS2@@").join(tk.map(function(x){return P2_PAT.replace("@@TT@@",function(){return X(x)})}).join(""));
@@ -550,7 +563,8 @@ function build2(doc){
  while(it.length<2)it.push("");
  doc=doc.split("@@PLANPARAS@@").join(it.map(function(x){return PLAN_PAT.replace("@@PT@@",function(){return X(x)})}).join(""));
  var tm=teamArr(),po=S.poste&&S.poste.trim()?S.poste.trim():"";
- var m={PD0:fd(S.d1),PD1:fd(S.d1),PDR:S.d1?(S.d2&&S.d2!==S.d1?fd(S.d1)+" au "+fd(S.d2):fd(S.d1)):"",
+ var prepDate=prepReportDate(S.d1);
+ var m={PD0:fd(prepDate),PD1:fd(prepDate),PDR:S.d1?(S.d2&&S.d2!==S.d1?fd(S.d1)+" au "+fd(S.d2):fd(S.d1)):"",
   PACT:S.act&&S.act.trim()?S.act.trim():"",PH1:hh(S.h1),PH2:hh(S.h2),
   POBJ:S.objet&&S.objet.trim()?S.objet:"",PPST:po?"Poste ":"",PPOSTE:po,
   PTEAM:tm.join(" - "),PRESP:["EL YAAGOUBI","HAKKI"][S.resp||0]};
