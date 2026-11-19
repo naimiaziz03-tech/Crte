@@ -36,6 +36,15 @@ button.d{color:var(--dg)}
 .item input[type=checkbox]{width:22px;height:22px;flex:none}
 .item input[type=text]{flex:1}
 .item button{flex:none;padding:7px 10px}
+.task-head{display:flex;justify-content:space-between;gap:8px;align-items:center;position:relative}
+.task-head-title{font-weight:600}
+.task-menu-wrap{position:relative;flex:none}
+.task-menu-trigger{font-size:23px;line-height:1;min-width:42px;padding:5px 10px}
+.task-menu-pop{position:absolute;z-index:8;top:calc(100% + 4px);inset-inline-end:0;min-width:180px;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:5px;box-shadow:0 5px 18px rgba(0,0,0,.18)}
+.task-menu-pop button{display:block;width:100%;text-align:right;border:0;border-radius:7px;padding:10px}
+.task-order-controls{display:flex;gap:4px;flex:none}
+.task-order-controls button{min-width:38px;padding:6px 9px;font-size:18px}
+.task-order-note{font-size:12px;color:var(--mu);padding:6px 2px}
 .bar{position:fixed;inset:auto 0 0 0;background:var(--card);border-top:1px solid var(--bd);padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;z-index:6}
 .bar button{width:100%;max-width:420px;padding:13px}
 .hint{font-size:12px;color:var(--mu);margin:0 0 6px}
@@ -49,6 +58,13 @@ button.d{color:var(--dg)}
 .sg{border:1px solid var(--bd);border-radius:10px;background:var(--card);margin-top:6px;overflow:hidden}
 .sg:empty{display:none}
 .sg .sh{font-size:12px;color:var(--mu);padding:6px 10px;background:var(--bg)}
+.task-suggestion-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;color:var(--mu);padding:6px 10px;background:var(--bg);border-bottom:1px solid var(--bd)}
+.task-suggestion-toggle{width:30px!important;min-width:30px;padding:2px 6px!important;border:1px solid var(--bd)!important;border-radius:7px!important;background:var(--card)!important;color:var(--tx)!important;font-size:17px;line-height:1.2;text-align:center!important}
+.task-suggestion-body[hidden]{display:none!important}
+/* سهم اقتراحات المواضيع في نفس الموضع المحدد من المستخدم */
+.obj-suggestion-head{display:flex;align-items:center;gap:8px;direction:rtl;padding:6px 10px;background:var(--bg);color:var(--mu);border-bottom:1px solid var(--bd);font-size:13px;line-height:1.55}
+.obj-suggestion-title{flex:1;min-width:0;text-align:right}
+.sg button.obj-suggestion-toggle{display:inline-flex!important;align-items:center;justify-content:center;flex:0 0 28px;width:28px!important;min-width:28px;height:28px;padding:0!important;border:1px solid var(--bd)!important;border-radius:50%!important;background:var(--card)!important;color:var(--pr)!important;font-size:19px;font-weight:700;line-height:1;text-align:center!important}
 .sg button{display:block;width:100%;text-align:left;direction:ltr;border:0;border-top:1px solid var(--bd);border-radius:0;padding:10px;background:var(--card)}
 .sg button small{display:block;color:var(--mu);font-size:12px;direction:rtl;text-align:right}
 .fab{position:fixed;inset:auto 0 calc(12px + env(safe-area-inset-bottom,0px)) 0;display:flex;gap:12px;justify-content:center;z-index:6;pointer-events:none}
@@ -106,8 +122,9 @@ select:focus{outline:2px solid var(--pr)}
 .tg button,.tm2 button{padding:11px 0;font-size:16px}
 .tm2{display:flex;gap:8px}.tm2 button{flex:1}
 #objBox[hidden]{display:none}
-.plan-fields{display:grid;grid-template-columns:1fr;gap:12px}.plan-field{display:flex;flex-direction:column;gap:6px}.plan-field input{width:100%;box-sizing:border-box;min-height:48px;font-size:16px;padding:12px;border:1px solid var(--line,#2b3645);border-radius:12px;background:var(--input,#111820);color:inherit}.xr{background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:6px 10px}
-.xr span{flex:1;font-size:16px;overflow-wrap:anywhere;text-align:left}
+.plan-fields{display:grid;grid-template-columns:1fr;gap:12px}.plan-field{display:flex;flex-direction:column;gap:6px}.plan-field input{width:100%;box-sizing:border-box;min-height:48px;font-size:16px;padding:12px;border:1px solid var(--line,#2b3645);border-radius:12px;background:var(--input,#111820);color:inherit}
+/* Keep the new-person input completely hidden until Add is pressed. */
+#extraPersonRow[hidden]{display:none!important}
 </style>
 </head>
 <body>
@@ -118,8 +135,8 @@ select:focus{outline:2px solid var(--pr)}
  <div class="card"><h2>التاريخ والتوقيت</h2>
   <div class="row"><div><label>Date (من)</label><input type="date" id="d1"></div>
   <div><label>Au (إلى)</label><input type="date" id="d2"></div></div>
-  <div class="row"><div><label>Horaire du</label><input type="time" id="h1"></div>
-  <div><label>à</label><input type="time" id="h2"></div></div>
+  <div class="row"><div><label>Horaire du</label><input type="text" id="h1" dir="ltr" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="HH:MM" aria-label="الساعة بنظام 24 ساعة"></div>
+  <div><label>à</label><input type="text" id="h2" dir="ltr" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="HH:MM" aria-label="الساعة بنظام 24 ساعة"></div></div>
  </div>
 
  <div class="card"><h2>المحطة والموضوع</h2>
@@ -133,16 +150,23 @@ select:focus{outline:2px solid var(--pr)}
   <p class="hint">الأسماء الثلاثة ثابتة ومفعّلة، ألغِ تفعيل من لم يشارك. رقم السيارة ثابت: TO 448.</p>
   <div id="team"></div>
   <label>Responsable Travaux / Responsable</label><div class="row" id="respBox"></div>
-  <label>أسماء إضافية (3 كحد أقصى)</label>
-  <div id="extraList"></div>
-  <div class="item" id="extraAdd"><input type="text" dir="ltr" id="extraIn" placeholder="اكتب الاسم"><button class="p" data-addextra="1">➕ إضافة اسم</button></div>
-  <p class="hint" id="extraMax" hidden>وصلت إلى الحد الأقصى: 3 أسماء إضافية. احذف اسما لإضافة آخر.</p>
+  <div id="extraTeamList"></div>
+  <div style="margin-top:10px">
+   <div id="extraPersonRow" class="row" style="gap:8px;align-items:stretch" hidden>
+    <div style="flex:1;min-width:0"><label for="extraPersonInput">اسم الشخص الجديد</label><input type="text" id="extraPersonInput" dir="auto" autocomplete="off" placeholder="اكتب الاسم هنا" maxlength="80"></div>
+   </div>
+   <button type="button" data-add-person="1" style="margin-top:8px;min-height:48px">＋ إضافة اسم</button>
+  </div>
+  <input type="hidden" id="autre" value="">
  </div>
 
  <div class="card"><h2>الأشغال والاختبارات</h2>
-  <p class="hint">تُعرض الأشغال تلقائيا عندما يتطابق Poste وObjet معا مع مرجع سابق، وإلا تبقى القائمة فارغة. فعّل المنجز منها، وعدّل النص أو أضف أشغالا أخرى.</p>
+  <p class="hint">تُستخرج الأشغال والاختبارات من المرجع الأصلي Compte Rendu des Travaux et essais عند تطابق Poste وObjet معاً. يمكنك تعديل Objet دون أن تختفي القائمة الحالية. كل تعديل يُحفظ تلقائياً على هذا الجهاز.</p>
   <div id="tasks"></div>
-  <button data-addtask="1">➕ إضافة شغل</button>
+  <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">
+   <button data-addtask="1">➕ إضافة شغل</button>
+   <button class="d" data-clear-tasks="1" type="button">🗑️ مسح جميع الأشغال</button>
+  </div>
   <div class="sg" id="tPool"></div>
  <div class="card"><h2>Définition du plan de contrôle</h2>
   <p class="hint">اختياري: تُكتب البنود في خانة 7 من ورقة التحضير، وإن لم تضف شيئا تبقى بنود الورقة الأصلية كما هي.</p>
@@ -189,51 +213,159 @@ var curDoc="crte";
 var KEY="crte_d554_v6";
 var NAMES=["NAIMI Aziz","JAGHMOUM Jaouad","MORHLI Mouad"];
 function today(){var d=new Date();return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2)}
-function defs(){return{d1:today(),d2:today(),dAuto:true,h1:"",h2:"",crte:"",poste:"",objet:"",obs:"",autre:"",extras:[],pk:[true,true,true],auto:"",resp:0,plan:[{t:"",on:true},{t:"",on:true}],act:"",
+function defs(){return{d1:today(),d2:today(),h1:"",h2:"",crte:"",poste:"",objet:"",obs:"",autre:"",extraTeam:[],extraPersonDraft:"",pk:[true,true,true],auto:"",resp:0,plan:[{t:"",on:true},{t:"",on:true}],act:"",
  tasks:[]}}
 var S;
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
-function load(){S=null;try{var r=localStorage.getItem(KEY);S=r?JSON.parse(r):null}catch(e){S=null}
- if(!S||!S.tasks||!S.pk)S=defs();if(!Array.isArray(S.plan)||S.plan.length!==2||S.plan.some(function(o){return o&&o.on===undefined}))S.plan=[{t:"",on:true},{t:"",on:true}];if(!Array.isArray(S.extras)){S.extras=[];if(S.autre&&String(S.autre).trim())S.extras.push(String(S.autre).trim())}S.extras=S.extras.slice(0,3);if(S.dAuto===true){S.d1=today();S.d2=today()}}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
-var F=["d1","d2","h1","h2","poste","objet","act"];
+// Stockage robuste : localStorage (synchrone) + IndexedDB (copie durable).
+var STORAGE_KEYS=[KEY,"crte_d554_v6","crte_d554_v5","crte_d554_v4","crte_d554_v3","crte_d554_v2","crte_d554_v1","crte_state_v1","crte_form_v1"];
+var DB_NAME="CRTE_PERSISTENCE",DB_STORE="state",DB_ID="current";
+var __dbPromise=null;
+function openCRTEDB(){
+ if(!window.indexedDB)return Promise.resolve(null);
+ if(__dbPromise)return __dbPromise;
+ __dbPromise=new Promise(function(resolve){
+  try{var q=indexedDB.open(DB_NAME,1);
+   q.onupgradeneeded=function(){var db=q.result;if(!db.objectStoreNames.contains(DB_STORE))db.createObjectStore(DB_STORE)};
+   q.onsuccess=function(){resolve(q.result)};q.onerror=function(){resolve(null)};
+  }catch(e){resolve(null)}
+ });return __dbPromise;
+}
+function idbWrite(value){return openCRTEDB().then(function(db){if(!db)return false;return new Promise(function(resolve){try{var tx=db.transaction(DB_STORE,"readwrite");tx.objectStore(DB_STORE).put(value,DB_ID);tx.oncomplete=function(){resolve(true)};tx.onerror=function(){resolve(false)};tx.onabort=function(){resolve(false)}}catch(e){resolve(false)}})})}
+function idbRead(){return openCRTEDB().then(function(db){if(!db)return null;return new Promise(function(resolve){try{var q=db.transaction(DB_STORE,"readonly").objectStore(DB_STORE).get(DB_ID);q.onsuccess=function(){resolve(q.result||null)};q.onerror=function(){resolve(null)}}catch(e){resolve(null)}})})}
+async function load(){
+ S=null;var candidates=[];
+ for(var i=0;i<STORAGE_KEYS.length;i++){
+  try{var txt=localStorage.getItem(STORAGE_KEYS[i]);if(txt){var obj=JSON.parse(txt);if(obj&&typeof obj==="object"&&!Array.isArray(obj))candidates.push(obj)}}catch(e){}
+ }
+ var best=null,bestAt=-1;
+ candidates.forEach(function(o){var at=Number(o._savedAt||0);if(at>bestAt){best=o;bestAt=at}});
+ // اقرأ IndexedDB أيضاً، واختر النسخة الأحدث بدلاً من تجاهلها لمجرد وجود localStorage قديم.
+ try{var backup=await idbRead();if(backup&&backup.data){var bo=JSON.parse(backup.data);var bt=Number(backup.savedAt||bo._savedAt||0);if(bo&&typeof bo==="object"&&!Array.isArray(bo)&&bt>bestAt){best=bo;bestAt=bt}}}catch(e){}
+ S=best||defs();
+ var d=defs();Object.keys(d).forEach(function(k){if(S[k]===undefined)S[k]=d[k]});
+ if(!Array.isArray(S.extraTeam))S.extraTeam=[];
+ S.extraTeam=S.extraTeam.map(function(n){return String(n==null?"":n).trim()}).filter(Boolean).slice(0,3);
+ // نقل الاسم الإضافي القديم إلى القائمة الجديدة دون فقدانه.
+ if(S.autre&&String(S.autre).trim()&&!S.extraTeam.length)S.extraTeam.push(String(S.autre).trim());
+ S.autre="";
+ if(typeof S.extraPersonDraft!=="string")S.extraPersonDraft="";
+ if(!Array.isArray(S.tasks))S.tasks=[];
+ S.tasks=S.tasks.filter(function(x){return x!=null}).map(function(x){if(typeof x==="string")return {t:x,g:0,on:true};if(typeof x!=="object")return {t:"",g:0,on:true};return {t:String(x.t==null?"":x.t),g:Number(x.g)||0,on:x.on!==false}});
+ if(!Array.isArray(S.pk))S.pk=[true,true,true];while(S.pk.length<3)S.pk.push(true);
+ if(!Array.isArray(S.plan))S.plan=d.plan;
+ if(typeof S.tasksCleared!=="boolean")S.tasksCleared=false;
+ save();
+}
+function save(){
+ try{var copy=JSON.parse(JSON.stringify(S));copy._savedAt=Date.now();var raw=JSON.stringify(copy);localStorage.setItem(KEY,raw);idbWrite({data:raw,savedAt:copy._savedAt});return true}
+ catch(e){try{idbWrite({data:JSON.stringify(S),savedAt:Date.now()})}catch(x){}return false}
+}
+function saveBeforeExit(){try{save()}catch(e){}}
+window.addEventListener('pagehide',saveBeforeExit);
+window.addEventListener('beforeunload',saveBeforeExit);
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')saveBeforeExit()});
+// حفظ فوري لأي تعديل داخل الحقول، حتى الحقول التي لا تملك مستمعاً خاصاً.
+document.addEventListener('input',function(){if(S)saveBeforeExit()},true);
+document.addEventListener('change',function(){if(S)saveBeforeExit()},true);
+var F=["d1","d2","h1","h2","poste","objet","autre","act"];
 $("d1").addEventListener("input",function(){var old=S.d1;if(!S.d2||S.d2===old){S.d2=this.value;$("d2").value=this.value}});
-$("d1").addEventListener("input",function(){S.dAuto=false});$("d2").addEventListener("input",function(){S.dAuto=false});
-window.addEventListener("pagehide",function(){save()});
-document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden")save()});
 F.forEach(function(k){$(k).addEventListener("input",function(){S[k]=this.value;save()})});
+// إدخال الوقت بصيغة 24 ساعة ثابتة، بعيداً عن منتقي الوقت الذي يفرضه Android.
+["h1","h2"].forEach(function(k){var el=$(k);if(!el)return;el.setAttribute("placeholder","HH:MM");el.setAttribute("inputmode","numeric");el.addEventListener("input",function(){var v=this.value.replace(/[^0-9]/g,"").slice(0,4);if(v.length>2)v=v.slice(0,2)+":"+v.slice(2);this.value=v;S[k]=v;save()});el.addEventListener("blur",function(){var v=this.value.trim();if(!v){S[k]="";save();return}var m=v.match(/^(\d{1,2}):(\d{2})$/);if(m){var hh=Number(m[1]),mm=Number(m[2]);if(hh>=0&&hh<=23&&mm>=0&&mm<=59){v=String(hh).padStart(2,"0")+":"+String(mm).padStart(2,"0");this.value=v;S[k]=v;save();return}}this.setCustomValidity("أدخل الوقت بنظام 24 ساعة مثل 08:30 أو 17:45");this.reportValidity();this.setCustomValidity("")})});
 function showObj(){$("objBox").hidden=!(S.poste&&S.poste.trim())}
-function fill(){F.forEach(function(k){$(k).value=S[k]||""});showObj();dTeam();dResp();dPlan();dTasks();rObj();dExtras()}
+function fill(){
+ F.forEach(function(k){var el=$(k);if(el)el.value=S[k]||""});
+ try{showObj()}catch(e){console.warn("showObj",e)}
+ try{dTeam()}catch(e){console.warn("dTeam",e)}
+ var epi=$("extraPersonInput");if(epi)epi.value=S.extraPersonDraft||""
+ try{dResp()}catch(e){console.warn("dResp",e)}
+ try{dPlan()}catch(e){console.warn("dPlan",e)}
+ try{dTasks()}catch(e){console.warn("dTasks",e)}
+ try{rObj()}catch(e){console.warn("rObj",e)}
+ var ab=$("autreBox");if(ab)ab.open=!!(S.autre&&String(S.autre).trim());
+}
+var extraPersonOpen=false;
+// Always start with the name field hidden; it opens only after tapping Add.
+(function(){var r=document.getElementById("extraPersonRow");if(r)r.hidden=true;})();
 function dTeam(){var h="";NAMES.forEach(function(n,i){
  h+='<label class="tm"><input type="checkbox" data-pk="'+i+'"'+(S.pk[i]?" checked":"")+'><span dir="ltr">'+esc(n)+'</span></label>'});
- $("team").innerHTML=h}
+ $("team").innerHTML=h;
+ var x="";(S.extraTeam||[]).slice(0,3).forEach(function(n,i){x+='<div class="tm" style="display:flex;align-items:center;gap:10px"><span dir="auto" style="flex:1;min-width:0">'+esc(n)+'</span><button type="button" class="d" data-remove-person="'+i+'" aria-label="حذف الاسم '+esc(n)+'" title="حذف الاسم">✕</button></div>'});
+ var list=$("extraTeamList");if(list)list.innerHTML=x;
+ var row=$("extraPersonRow"),inp=$("extraPersonInput"),add=document.querySelector('[data-add-person="1"]');
+ if(row)row.hidden=!extraPersonOpen;
+ if(inp&&inp.value!==String(S.extraPersonDraft||""))inp.value=S.extraPersonDraft||"";
+ if(add){var full=(S.extraTeam||[]).length>=3;add.disabled=full;add.textContent=full?'اكتمل الحد (3/3)':(extraPersonOpen?'✓ إضافة الاسم':'＋ إضافة اسم');}
+}
 function dResp(){var n=["ELYAAGOUBI","HAKKI"],h="";n.forEach(function(x,i){h+='<button data-resp="'+i+'"'+((S.resp||0)===i?' class="p"':'')+'>'+x+'</button>'});$("respBox").innerHTML=h}
-function dExtras(){var h="",x=S.extras||[];x.forEach(function(n,i){h+='<div class="item xr"><span dir="ltr">'+esc(n)+'</span><button class="d" data-xdel="'+i+'" aria-label="حذف">✕</button></div>'});
- $("extraList").innerHTML=h;var full=x.length>=3;$("extraAdd").style.display=full?"none":"flex";$("extraMax").hidden=!full}
-function addExtra(){var inp=$("extraIn"),v=inp.value.trim();if(!v)return;S.extras=S.extras||[];if(S.extras.length>=3)return;S.extras.push(v);inp.value="";save();dExtras()}
-$("extraIn").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();addExtra()}});
 function dPlan(){
- if(!Array.isArray(S.plan))S.plan=[{t:"",on:true},{t:"",on:true}];
- S.plan=S.plan.slice(0,2);while(S.plan.length<2)S.plan.push({t:"",on:true});
+ // خانتان فقط للإدخال الحر؛ تحويل أي بيانات قديمة إلى صيغة موحدة.
+ if(!Array.isArray(S.plan))S.plan=[];
+ S.plan=S.plan.slice(0,2).map(function(o){
+  if(typeof o==="string")return {t:o,on:true};
+  if(!o||typeof o!=="object")return {t:"",on:true};
+  return {t:String(o.t==null?"":o.t),on:true};
+ });
+ while(S.plan.length<2)S.plan.push({t:"",on:true});
  var h="";S.plan.forEach(function(o,i){
- h+='<div class="plan-field"><label>بند '+(i+1)+'</label><input type="text" dir="auto" data-pt="'+i+'" value="'+esc(o.t||"")+'" placeholder="اكتب بند المراقبة هنا..."></div>'});
- $("plan").innerHTML=h;$("pPool").innerHTML=""}
-function dTasks(){var h="";S.tasks.forEach(function(o,i){
- h+='<div class="item"><input type="checkbox" data-ti="'+i+'"'+(o.on?" checked":"")+'><input type="text" dir="ltr" data-tt="'+i+'" value="'+esc(o.t)+'"><button class="d" data-td="'+i+'">✕</button></div>'});
- $("tasks").innerHTML=h;rPool()}
+  h+='<div class="plan-field"><label>بند '+(i+1)+'</label><input type="text" dir="auto" data-pt="'+i+'" value="'+esc(o.t)+'" placeholder="اكتب بند المراقبة هنا..."></div>';
+ });
+ $("plan").innerHTML=h;
+ // لا تعرض اقتراحات أو اختيارات تحت هاتين الخانتين.
+ if($("pPool"))$("pPool").innerHTML="";
+}
+var taskReorderMode=false, taskMenuOpen=false, taskSuggestionsCollapsed=false, objectSuggestionsCollapsed=false;
+function dTasks(){
+ // قائمة الأشغال مستقلة عن حقلي Poste وObjet؛ لا تُخفى عند تغيّر المطابقة.
+ if(!Array.isArray(S.tasks))S.tasks=[];
+ S.tasks=S.tasks.filter(function(x){return x!=null}).map(function(x){if(typeof x==="string")return {t:x,g:0,on:true};if(typeof x!=="object")return {t:"",g:0,on:true};return {t:String(x.t==null?"":x.t),g:Number(x.g)||0,on:x.on!==false}});
+ var h='<div class="task-head"><span class="task-head-title">قائمة الأشغال المحفوظة ('+S.tasks.length+' بند)</span><div class="task-menu-wrap"><button type="button" class="task-menu-trigger" data-tasks-menu="1" aria-label="خيارات الأشغال" aria-expanded="'+(taskMenuOpen?'true':'false')+'">⋮</button>';
+ if(taskMenuOpen){h+='<div class="task-menu-pop"><button type="button" data-reorder-toggle="1">'+(taskReorderMode?'✓ إنهاء ترتيب البنود':'↕ تعديل ترتيب البنود')+'</button><button type="button" data-addtask="1">＋ إضافة شغل</button><button type="button" data-clear-tasks="1">مسح جميع الأشغال</button></div>'}
+ h+='</div></div>';
+ if(taskReorderMode)h+='<div class="task-order-note">استعمل السهمين لتغيير ترتيب البند. الترتيب الجديد يُحفظ تلقائياً.</div>';
+ if(!S.tasks.length){
+  h+='<div class="hint" style="padding:12px;border:1px dashed var(--line,#aaa);border-radius:10px">لا توجد أشغال حالياً. اختر موضوعاً مرجعياً أو اضغط «إضافة شغل». ستبقى هذه القائمة ظاهرة ولن تُملأ من جديد بعد مسحها إلا باختيارك.</div>';
+ }else{
+  S.tasks.forEach(function(o,i){
+   if(typeof o==="string")o=S.tasks[i]={t:o,g:0,on:true};
+   h+='<div class="item"><input aria-label="إدراج الشغل في التقرير" type="checkbox" data-ti="'+i+'"'+(o.on!==false?" checked":"")+'><input aria-label="نص الشغل" type="text" dir="auto" data-tt="'+i+'" value="'+esc(o.t||'')+'">';
+   if(taskReorderMode){h+='<div class="task-order-controls"><button type="button" data-move-task="'+i+'" data-delta="-1" aria-label="رفع البند" title="رفع"'+(i===0?' disabled':'')+'>↑</button><button type="button" data-move-task="'+i+'" data-delta="1" aria-label="خفض البند" title="خفض"'+(i===S.tasks.length-1?' disabled':'')+'>↓</button></div>'}
+   h+='<button class="d" type="button" aria-label="حذف هذا الشغل" data-td="'+i+'">✕</button></div>';
+  });
+ }
+ $("tasks").innerHTML=h;
+ rPool();
+}
+
 document.addEventListener("click",function(e){
  var t=e.target;
  var b=t.closest?t.closest("button"):null;if(!b)return;
  var mm=b.getAttribute("data-menu");
  if(mm!==null){if(mm==="1"){$("mn").hidden=false;rList();layerOpen("menu",function(){$("mn").hidden=true})}else layerClose("menu");return}
- if(b.getAttribute("data-addfiles")){$("fi").click();return}
+ if(b.getAttribute("data-tasks-menu")!==null){taskMenuOpen=!taskMenuOpen;dTasks();return}
+ if(b.getAttribute("data-task-suggestions-toggle")!==null){taskSuggestionsCollapsed=!taskSuggestionsCollapsed;rPool();return}
+ if(b.getAttribute("data-obj-suggestions-toggle")!==null){objectSuggestionsCollapsed=!objectSuggestionsCollapsed;rObj();return}
+ if(b.getAttribute("data-reorder-toggle")!==null){taskReorderMode=!taskReorderMode;taskMenuOpen=false;dTasks();return}
+ var mi=b.getAttribute("data-move-task");
+ if(mi!==null){var from=Number(mi),delta=Number(b.getAttribute("data-delta")),to=from+delta;if(from>=0&&from<S.tasks.length&&to>=0&&to<S.tasks.length){var moved=S.tasks.splice(from,1)[0];S.tasks.splice(to,0,moved);save();dTasks()}return}
+ if(b.getAttribute("data-add-person")!==null){
+  var inp=$("extraPersonInput"),row=$("extraPersonRow");
+  if(!extraPersonOpen){if((S.extraTeam||[]).length>=3){alert("يمكنك إضافة 3 أشخاص إضافيين كحد أقصى.");return}extraPersonOpen=true;if(row)row.hidden=false;if(inp){inp.value=S.extraPersonDraft||"";inp.focus()}b.textContent="✓ إضافة الاسم";return}
+  var name=(inp&&inp.value||"").trim();
+  if(!name){if(inp){inp.focus();inp.setCustomValidity("اكتب اسم الشخص أولاً");inp.reportValidity();inp.setCustomValidity("")}return}
+  if(!Array.isArray(S.extraTeam))S.extraTeam=[];
+  if(S.extraTeam.length>=3){alert("يمكنك إضافة 3 أشخاص إضافيين كحد أقصى.");return}
+  if(S.extraTeam.some(function(n){return n.toLocaleLowerCase()===name.toLocaleLowerCase()})){alert("هذا الاسم مضاف بالفعل.");return}
+  S.extraTeam.push(name);S.extraPersonDraft="";extraPersonOpen=false;if(inp)inp.value="";save();dTeam();return;
+ }
+ var rmPerson=b.getAttribute("data-remove-person");if(rmPerson!==null){var ri=Number(rmPerson);if(ri>=0&&ri<(S.extraTeam||[]).length){S.extraTeam.splice(ri,1);save();dTeam()}return}
+ if(b.getAttribute("data-addfiles")){ $("fi").click();return}
  if(b.getAttribute("data-bk")){backupAll();return}
  if(b.getAttribute("data-rs")){$("fr").click();return}
  if(b.getAttribute("data-plall")){return}
  var plp=b.getAttribute("data-plp");if(plp!==null){return}
- if(b.getAttribute("data-addextra")){addExtra();return}
- var xd=b.getAttribute("data-xdel");if(xd!==null){S.extras.splice(+xd,1);save();dExtras();return}
  var rs_=b.getAttribute("data-resp");if(rs_!==null){S.resp=+rs_;save();dResp();return}
  if(b.getAttribute("data-addplan")){return}
  var pd_=b.getAttribute("data-pd");if(pd_!==null){return}
@@ -248,37 +380,41 @@ document.addEventListener("click",function(e){
  if(b.getAttribute("data-tall")){TL.forEach(function(x){S.tasks.push({t:x,g:S.tasks.length?S.tasks[S.tasks.length-1].g:0,on:true})});save();dTasks();return}
  var pp=b.getAttribute("data-pp"),ob=b.getAttribute("data-ob"),tp=b.getAttribute("data-tp");
  if(pp!==null){var x=PL[+pp];S.poste=x.p;pickedP=x.p;$("poste").value=x.p;save();showObj();rPost();rObj();syncTasks();return}
- if(ob!==null){var r=OL[+ob];S.objet=r.o;$("objet").value=r.o;S.tasks=r.t.map(function(z){return{t:z,g:0,on:true}});S.auto=exactR().map(function(x){return x.id}).join(",");S.plan=[{t:"",on:true},{t:"",on:true}];save();dTasks();dPlan();return}
+ if(ob!==null){var r=OL[+ob];if(!r)return;S.objet=r.o;$("objet").value=r.o;S.tasksCleared=false;S.tasks=(r.t||[]).map(function(z){return{t:String(z),g:0,on:true}});S.auto=exactR().map(function(x){return x.id}).join(",");S.plan=[{t:"",on:true},{t:"",on:true}];save();dTasks();dPlan();return}
  if(tp!==null){S.tasks.push({t:TL[+tp],g:S.tasks.length?S.tasks[S.tasks.length-1].g:0,on:true});save();dTasks();return}
- if(b.getAttribute("data-addtask")){S.tasks.push({t:"",g:S.tasks.length?S.tasks[S.tasks.length-1].g:0,on:true});save();dTasks();return}
- var d=b.getAttribute("data-td");if(d!==null){S.tasks.splice(+d,1);save();dTasks();return}
+ if(b.getAttribute("data-addtask")){S.tasksCleared=false;S.tasks.push({t:"",g:S.tasks.length?S.tasks[S.tasks.length-1].g:0,on:true});save();dTasks();return}
+ if(b.getAttribute("data-clear-tasks")){
+  if(!S.tasks.length)return;
+  if(!confirm("هل تريد مسح جميع الأشغال والاختبارات؟ لن تُحذف إلا بعد تأكيدك."))return;
+  S.tasks=[];S.tasksCleared=true;S.auto="";save();dTasks();return;
+ }
+ var d=b.getAttribute("data-td");if(d!==null){S.tasks.splice(+d,1);if(!S.tasks.length)S.tasksCleared=true;save();dTasks();return}
  if(b.getAttribute("data-reset")){if(!confirm("مسح كل الإدخال وبدء تقرير جديد؟"))return;S=defs();save();fill();window.scrollTo(0,0);return}
  var sv=b.getAttribute("data-save");if(sv){saveDoc();return}
  var vw=b.getAttribute("data-view");if(vw){viewDoc();return}
  if(b.getAttribute("data-close"))closeView()});
 $("plan").addEventListener("input",function(e){var i=e.target.getAttribute("data-pt");if(i!==null){S.plan[+i].t=e.target.value;save()}});
 
-$("tasks").addEventListener("input",function(e){var i=e.target.getAttribute("data-tt");if(i!==null){S.tasks[+i].t=e.target.value;save()}});
+$("tasks").addEventListener("input",function(e){var i=e.target.getAttribute("data-tt");if(i!==null&&S.tasks[+i]){S.tasks[+i].t=e.target.value;save()}});
 $("team").addEventListener("change",function(e){var i=e.target.getAttribute("data-pk");if(i!==null){S.pk[+i]=e.target.checked;save()}});
-$("tasks").addEventListener("change",function(e){var i=e.target.getAttribute("data-ti");if(i!==null){S.tasks[+i].on=e.target.checked;save()}});
+$("extraPersonInput").addEventListener("input",function(){S.extraPersonDraft=this.value;save()});
+$("extraPersonInput").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();var b=document.querySelector('[data-add-person="1"]');if(b&&!b.disabled)b.click()}});
+$("tasks").addEventListener("change",function(e){var i=e.target.getAttribute("data-ti");if(i!==null&&S.tasks[+i]){S.tasks[+i].on=e.target.checked;save()}});
 
 function N(s){return String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g,"")}
 var PL=[],OL=[],TL=[],pickedP="";
 var LIB=[];
 function nid(){return "i"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 function libSave(){try{localStorage.setItem("crte_lib_v2",JSON.stringify(LIB))}catch(e){}}
-function libLoad(){var l=null;try{l=JSON.parse(localStorage.getItem("crte_lib_v2")||"null")}catch(e){}
- if(Array.isArray(l)){LIB=l;
-  var bi=null;try{bi=localStorage.getItem("crte_lib_bi")}catch(e){}
-  if(bi!=="19"){
-   DB.forEach(function(r){var k=keyOf(r),e=null,i;for(i=0;i<LIB.length;i++){if(keyOf(LIB[i])===k){e=LIB[i];break}}
-    if(e){if((!e.c||!e.c.length)&&r.c&&r.c.length)e.c=r.c.slice()}
-    else if(r.f==="preparation_tazaII_TRn1.doc")LIB.push({id:nid(),f:r.f,p:r.p,o:r.o,t:r.t.slice(),c:(r.c||[]).slice()})});
-   libSave();try{localStorage.setItem("crte_lib_bi","19")}catch(e){}}
-  return}
- LIB=DB.map(function(r){return{id:nid(),f:r.f||"",p:r.p,o:r.o,t:r.t.slice(),c:(r.c||[]).slice()}});
- try{var u=JSON.parse(localStorage.getItem("crte_user_db_v1")||"[]");if(Array.isArray(u))u.forEach(function(r){if(r&&r.p&&r.t)LIB.push({id:nid(),f:r.f||"",p:r.p,o:r.o||"",t:r.t})})}catch(e){}
- libSave()}
+function libLoad(){
+ var stored=null;try{stored=JSON.parse(localStorage.getItem("crte_lib_v2")||"null")}catch(e){stored=null}
+ // Validate stored library entries; malformed/empty legacy storage must never hide embedded references.
+ LIB=Array.isArray(stored)?stored.filter(function(r){return r&&typeof r==="object"&&r.p&&r.o&&Array.isArray(r.t)}):[];
+ var byKey={};LIB.forEach(function(r){if(!r.id)r.id=nid();r.t=r.t.map(function(x){return String(x)});r.c=Array.isArray(r.c)?r.c:[];byKey[keyOf(r)]=r});
+ DB.forEach(function(r){var k=keyOf(r),old=byKey[k];if(!old){var copy={id:nid(),f:r.f||"",p:r.p,o:r.o||"",t:(r.t||[]).slice(),c:(r.c||[]).slice()};LIB.push(copy);byKey[k]=copy}else{if(!Array.isArray(old.t)||!old.t.length)old.t=(r.t||[]).slice();if(!Array.isArray(old.c)||!old.c.length)old.c=(r.c||[]).slice()}});
+ try{var u=JSON.parse(localStorage.getItem("crte_user_db_v1")||"[]");if(Array.isArray(u))u.forEach(function(r){if(r&&r.p&&r.o&&Array.isArray(r.t)){var k=keyOf(r);if(!byKey[k]){var x={id:nid(),f:r.f||"",p:String(r.p),o:String(r.o),t:r.t.map(String),c:[]};LIB.push(x);byKey[k]=x}}})}catch(e){}
+ libSave();try{localStorage.setItem("crte_lib_bi","20")}catch(e){}
+}
 libLoad();
 function allDB(){return LIB}
 function posts(){var m={};allDB().forEach(function(r){var k=N(r.p);if(!m[k])m[k]={k:k,p:r.p,n:0};m[k].n++;if(r.p.length>m[k].p.length)m[k].p=r.p});
@@ -290,32 +426,57 @@ function rPost(){var q=N(S.poste),h="";PL=[];
  if(PL.length){h='<div class="sh">محطات من التقارير السابقة</div>';PL.forEach(function(x,i){h+='<button data-pp="'+i+'">'+esc(x.p)+'<small>'+x.n+' تقرير</small></button>'})}
  $("pSug").innerHTML=h}
 function rObj(){var rs=matchR(),h="",seen={};OL=[];
- rs.forEach(function(r){var k=N(r.o)+"|"+r.t.map(N).join("~");if(r.o&&!seen[k]){seen[k]=1;OL.push(r)}});
- if(OL.length){h='<div class="sh">مواضيع سابقة لنفس المحطة، اضغط لملء الموضوع وأشغاله من نفس الملف</div>';OL.forEach(function(r,i){h+='<button data-ob="'+i+'">'+esc(r.o)+'<small>'+(r.s?esc(r.s)+' · ':'')+esc(r.f||"")+' · '+r.t.length+' أشغال</small></button>'})}
- $("oSug").innerHTML=h;rPool()}
+ rs.forEach(function(r){var k=N(r.o);if(r.o&&!seen[k]){seen[k]=1;OL.push(r)}});
+ if(OL.length){
+  h='<div class="obj-suggestion-head"><button type="button" class="obj-suggestion-toggle" data-obj-suggestions-toggle="1" aria-label="إظهار أو إخفاء اقتراحات المواضيع" aria-expanded="'+(!objectSuggestionsCollapsed?'true':'false')+'" title="إظهار أو إخفاء الاقتراحات">'+(objectSuggestionsCollapsed?'▸':'▾')+'</button><span class="obj-suggestion-title">مواضيع سابقة لنفس المحطة. عند اختيار الموضوع تظهر أشغاله تلقائيا ويمكنك تعديلها</span></div>';
+  if(!objectSuggestionsCollapsed){OL.forEach(function(r,i){h+='<button type="button" data-ob="'+i+'">'+esc(r.o)+'<small>'+esc(r.f||"")+' · '+r.t.length+' أشغال</small></button>'})}
+ }
+ $("oSug").innerHTML=h;
+ // إذا كانت للمحطة نتيجة مرجعية واحدة فقط، نملأ Objet والأشغال تلقائيا دون اختيار يدوي.
+ if(!S.objet&&OL.length===1){
+  S.objet=OL[0].o;$("objet").value=S.objet;save();syncTasks();
+ }
+ rPool();
+}
 function exactR(){var p=N(S.poste),o=N(S.objet);if(!p||!o)return[];return allDB().filter(function(r){return N(r.p)===p&&N(r.o)===o})}
-function syncTasks(){var rs=exactR();
- if(rs.length){var key=rs.map(function(r){return r.id}).join(",");
-  if(S.auto!==key){var seen={},u=[];rs.forEach(function(r){r.t.forEach(function(x){var k=N(x);if(!seen[k]){seen[k]=1;u.push(x)}})});
-   S.tasks=u.map(function(x){return{t:x,g:0,on:true}});
-   S.plan=[{t:"",on:true},{t:"",on:true}];
-   S.auto=key;save();dTasks();dPlan();return}}
- else if(S.auto){S.tasks=[];S.plan=[{t:"",on:true},{t:"",on:true}];S.auto="";save();dTasks();dPlan();return}
- rPool()}
+function syncTasks(){
+ var rs=exactR();
+ if(rs.length && !S.tasks.length && !S.tasksCleared){
+  var seen={},u=[];
+  rs.forEach(function(r){(r.t||[]).forEach(function(x){
+   var k=N(x);if(k&&!seen[k]){seen[k]=1;u.push(x)}
+  })});
+  S.tasks=u.map(function(x){return{t:x,g:0,on:true}});
+  S.auto=rs.map(function(r){return r.id}).join(",");
+  save();dTasks();
+ }
+ // لا نمسح S.tasks أو نغيّرها لمجرد أن Objet تغيّر أو لم يعد مطابقاً أثناء الكتابة.
+ rPool();
+}
 var PLL=[];
-function rPlanPool(){var h="",seen={},have={},ex=exactR();PLL=[];
- if(ex.length){var pk=N(S.poste);(S.plan||[]).forEach(function(o){if(o.t.trim())have[N(o.t)]=1});
-  allDB().forEach(function(r){if(N(r.p)===pk)(r.c||[]).forEach(function(x){var k=N(x);if(!seen[k]&&!have[k]){seen[k]=1;PLL.push(x)}})})}
- if(PLL.length){h='<div class="sh">بنود خطة المراقبة لنفس المحطة، اضغط لإضافتها</div><button data-plall="1">➕ إضافة كل البنود ('+PLL.length+')</button>';PLL.forEach(function(x,i){h+='<button data-plp="'+i+'">➕ '+esc(x)+'</button>'})}
- $("pPool").innerHTML=h}
+function rPlanPool(){
+ // تعطيل اقتراحات المكتبة في خطة المراقبة: المطلوب خانتان بإدخال حر فقط.
+ PLL=[];
+ if($("pPool"))$("pPool").innerHTML="";
+}
 function rPool(){var h="",seen={},have={},ex=exactR();TL=[];
  if(ex.length){var pk=N(S.poste),exid={};ex.forEach(function(r){exid[r.id]=1});
   S.tasks.forEach(function(o){have[N(o.t)]=1});
-  allDB().forEach(function(r){if(N(r.p)===pk)r.t.forEach(function(x){var k=N(x);if(!seen[k]&&!have[k]){seen[k]=1;TL.push(x)}})})}
- if(TL.length){h='<div class="sh">أشغال إضافية من تقارير أخرى لنفس المحطة، اضغط لإضافتها</div><button data-tall="1">➕ إضافة كل الأشغال الإضافية ('+TL.length+')</button>';TL.forEach(function(x,i){h+='<button data-tp="'+i+'">➕ '+esc(x)+'</button>'})}
- $("tPool").innerHTML=h;rPlanPool()}
-$("poste").addEventListener("input",function(){pickedP="";if(!(S.poste||"").trim()&&S.objet){S.objet="";$("objet").value="";save()}showObj();rPost();rObj();syncTasks()});
-$("objet").addEventListener("input",function(){syncTasks()});
+  allDB().forEach(function(r){if(r&&N(r.p)===pk&&Array.isArray(r.t))r.t.forEach(function(x){var k=N(x);if(k&&!seen[k]&&!have[k]){seen[k]=1;TL.push(String(x))}})})}
+ if(TL.length){
+  h='<div class="task-suggestion-head"><span>اقتراحات الأشغال الإضافية ('+TL.length+')</span><button type="button" class="task-suggestion-toggle" data-task-suggestions-toggle="1" aria-label="إظهار أو إخفاء اقتراحات الأشغال" aria-expanded="'+(!taskSuggestionsCollapsed?'true':'false')+'" title="إظهار أو إخفاء الاقتراحات">'+(taskSuggestionsCollapsed?'▸':'▾')+'</button></div>';
+  if(!taskSuggestionsCollapsed){h+='<div class="task-suggestion-body"><div class="sh">اضغط على أي شغل لإضافته إلى القائمة المحفوظة</div><button type="button" data-tall="1">➕ إضافة كل الأشغال الإضافية ('+TL.length+')</button>';TL.forEach(function(x,i){h+='<button type="button" data-tp="'+i+'">➕ '+esc(x)+'</button>'});h+='</div>'}
+ }
+ if($("tPool"))$("tPool").innerHTML=h;rPlanPool()}
+$("poste").addEventListener("input",function(){
+ pickedP="";S.poste=this.value;
+ if(!(S.poste||"").trim()&&S.objet){S.objet="";$("objet").value="";}
+ save();showObj();rPost();rObj();syncTasks();
+});
+$("objet").addEventListener("input",function(){
+ // تعديل Objet لا يمسح ولا يعيد توليد الأشغال الحالية؛ تبقى كما هي إلى أن يختار المستخدم موضوعاً مرجعياً آخر.
+ S.objet=this.value;save();
+});
 
 function unesc(s){return s.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,"&")}
 function paras(xml){xml=xml.replace(/<mc:Fallback>[\s\S]*?<\/mc:Fallback>/g,"");var out=[];
@@ -366,7 +527,7 @@ async function importFiles(list){var ok=0,bad=[];
    ok++}catch(e){bad.push(f.name+" ("+((e&&e.message)||e)+")")}}
  libSave();rList();pickedP="";rPost();rObj();
  $("imsg").textContent=(ok?"✅ تمت إضافة "+ok+" ملف إلى ملفات المرجعية\n":"")+(bad.length?"⚠️ لم تتم إضافة:\n"+bad.join("\n"):"")}
-function rList(){$("icount").textContent="ملفات المرجعية: "+LIB.length+" · الإصدار 24"}
+function rList(){$("icount").textContent="ملفات المرجعية: "+LIB.length+" · الإصدار 20"}
 var editing=null;
 function openLib(){editing=null;$("lib").hidden=false;rLib();layerOpen("lib",function(){$("lib").hidden=true;editing=null;rList();pickedP="";rPost();rObj()})}
 function libBack(){if(editing)layerClose("libedit");else layerClose("lib")}
@@ -390,12 +551,14 @@ function layerClose(n){var i=-1,k;for(k=LAY.length-1;k>=0;k--){if(LAY[k].n===n){
  if(i===LAY.length-1){try{history.back()}catch(e){}setTimeout(function(){if(LAY[LAY.length-1]===L){LAY.pop();L.c()}},300)}
  else{LAY.splice(i,1);L.c()}}
 window.addEventListener("popstate",function(){var L=LAY.pop();if(L)L.c()});
-function snapshot(){return{app:"crte",v:1,date:new Date().toISOString(),lib:LIB,prefs:{pk:S.pk,resp:S.resp||0,extras:(S.extras||[]).slice(0,3)}}}
-async function saveBlob(blob,nm){var dl=null;try{dl=await claude.use("downloads")}catch(e){}
- if(dl){await dl.save({filename:nm,data:blob});return}
- var file=new File([blob],nm,{type:blob.type});
- if(/iPad|iPhone|iPod/.test(navigator.userAgent)&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file]});return}
- var u=URL.createObjectURL(blob),an=document.createElement("a");an.href=u;an.download=nm;document.body.appendChild(an);an.click();setTimeout(function(){URL.revokeObjectURL(u);an.remove()},4000)}
+function snapshot(){return{app:"crte",v:2,date:new Date().toISOString(),lib:LIB,prefs:{pk:S.pk,resp:S.resp||0,autre:S.autre||"",extraTeam:(S.extraTeam||[]).slice(0,3),extraPersonDraft:S.extraPersonDraft||""}}}
+async function saveBlob(blob,nm){
+ // تنزيل مباشر من المتصفح: لا يعتمد على مكتبة downloads أو ملفات Library خارجية.
+ var u=URL.createObjectURL(blob),an=document.createElement("a");
+ an.href=u;an.download=nm;an.style.display="none";document.body.appendChild(an);
+ an.click();
+ setTimeout(function(){URL.revokeObjectURL(u);an.remove()},10000);
+}
 async function doBackup(){var el=$("imsg");
  try{var blob=new Blob([JSON.stringify(snapshot())],{type:"application/json"});
   await saveBlob(blob,"CRTE_backup_"+today()+".json");el.textContent="✅ تم تحميل النسخة الكاملة ("+LIB.length+" ملف مرجعي)"}
@@ -406,7 +569,7 @@ function doRestore(file){var el=$("imsg");var rd=new FileReader();
   var lib=d.lib.filter(function(r){return r&&r.p&&Array.isArray(r.t)}).map(function(r){return{id:r.id||nid(),f:r.f||"",p:String(r.p),o:r.o||"",t:r.t.map(String),c:Array.isArray(r.c)?r.c.map(String):undefined,s:r.s}});
   if(!confirm("سيتم استبدال ملفات المرجعية الحالية ("+LIB.length+") بالنسخة ("+lib.length+"). متابعة؟"))return;
   LIB=lib;libSave();
-  if(d.prefs){if(Array.isArray(d.prefs.pk)&&d.prefs.pk.length===3)S.pk=d.prefs.pk.map(Boolean);S.resp=+d.prefs.resp===1?1:0;S.extras=Array.isArray(d.prefs.extras)?d.prefs.extras.slice(0,3).map(String):(d.prefs.autre?[String(d.prefs.autre)]:[]);save();dTeam();dExtras();dResp()}
+  if(d.prefs){if(Array.isArray(d.prefs.pk)&&d.prefs.pk.length===3)S.pk=d.prefs.pk.map(Boolean);S.resp=+d.prefs.resp===1?1:0;S.autre=d.prefs.autre||"";S.extraTeam=Array.isArray(d.prefs.extraTeam)?d.prefs.extraTeam.map(String).slice(0,3):(S.autre?[S.autre]:[]);S.extraPersonDraft=String(d.prefs.extraPersonDraft||"");S.autre="";save();$("autre").value="";dTeam();dResp();$("extraPersonInput").value=S.extraPersonDraft}
   rList();pickedP="";rPost();rObj();el.textContent="✅ تم استرجاع النسخة: "+lib.length+" ملف مرجعي"}
  catch(e){el.textContent="⚠️ تعذر الاسترجاع: "+((e&&e.message)||e)}};
  rd.readAsText(file)}
@@ -417,9 +580,22 @@ function fd(d){if(!d)return "";var p=d.split("-");return p[2]+"/"+p[1]+"/"+p[0]}
 function hm(t){return t&&t.indexOf(":")>0?t.split(":"):["",""]}
 function X(s){return esc(s).replace(/&quot;/g,'"').replace(/\n/g,'</w:t><w:br/><w:t xml:space="preserve">')}
 function rep(s,k,v){return s.split("@@"+k+"@@").join(v)}
-function teamArr(){var tm=NAMES.filter(function(n,i){return S.pk[i]});(S.extras||[]).forEach(function(x){if(x&&x.trim())tm.push(x.trim())});return tm}
+function teamArr(){var tm=NAMES.filter(function(n,i){return S.pk[i]});(S.extraTeam||[]).slice(0,3).forEach(function(n){if(String(n||"").trim())tm.push(String(n).trim())});if(S.autre&&S.autre.trim()&&tm.indexOf(S.autre.trim())<0)tm.push(S.autre.trim());return tm}
 function fmtH(v){return v&&v.indexOf(":")>0?v.replace(":","H"):""}
 function hh(v){return v&&v.indexOf(":")>0?v.replace(":","H"):""}
+function prepReportDate(raw){
+ // Date de préparation = veille de la date du compte-rendu.
+ // Si la veille tombe samedi ou dimanche, remonter au vendredi.
+ var d;
+ if(/^\d{4}-\d{2}-\d{2}$/.test(String(raw||""))){
+  var a=String(raw).split("-"); d=new Date(Number(a[0]),Number(a[1])-1,Number(a[2]));
+ }else{d=new Date(); d.setHours(0,0,0,0);}
+ if(isNaN(d.getTime())){d=new Date();d.setHours(0,0,0,0);}
+ d.setDate(d.getDate()-1);
+ if(d.getDay()===6)d.setDate(d.getDate()-1); // samedi -> vendredi
+ else if(d.getDay()===0)d.setDate(d.getDate()-2); // dimanche -> vendredi
+ return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);
+}
 function build2(doc){
  var tk=S.tasks.filter(function(o){return o.on&&o.t.trim()}).map(function(o){return o.t});
  doc=doc.split("@@TASKPARAS2@@").join(tk.map(function(x){return P2_PAT.replace("@@TT@@",function(){return X(x)})}).join(""));
@@ -427,7 +603,8 @@ function build2(doc){
  while(it.length<2)it.push("");
  doc=doc.split("@@PLANPARAS@@").join(it.map(function(x){return PLAN_PAT.replace("@@PT@@",function(){return X(x)})}).join(""));
  var tm=teamArr(),po=S.poste&&S.poste.trim()?S.poste.trim():"";
- var m={PD0:fd(S.d1),PD1:fd(S.d1),PDR:S.d1?(S.d2&&S.d2!==S.d1?fd(S.d1)+" au "+fd(S.d2):fd(S.d1)):"",
+ var prepDate=prepReportDate(S.d1);
+ var m={PD0:fd(prepDate),PD1:fd(prepDate),PDR:S.d1?(S.d2&&S.d2!==S.d1?fd(S.d1)+" au "+fd(S.d2):fd(S.d1)):"",
   PACT:S.act&&S.act.trim()?S.act.trim():"",PH1:hh(S.h1),PH2:hh(S.h2),
   POBJ:S.objet&&S.objet.trim()?S.objet:"",PPST:po?"Poste ":"",PPOSTE:po,
   PTEAM:tm.join(" - "),PRESP:["EL YAAGOUBI","HAKKI"][S.resp||0]};
@@ -454,12 +631,27 @@ async function makeBlob(){
  var xml=await z.file("word/document.xml").async("string");
  z.file("word/document.xml",build(build2(xml)));
  return z.generateAsync({type:"blob",compression:"DEFLATE",mimeType:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"})}
-function fname(){return "CRTE_Fiche_"+(S.d1||new Date().toISOString().slice(0,10))+".docx"}
-async function outFile(blob,nm){var dl=null;try{dl=await claude.use("downloads")}catch(e){}
- if(dl){await dl.save({filename:nm,data:blob});return}
- var file=new File([blob],nm,{type:blob.type});
- if(/iPad|iPhone|iPod/.test(navigator.userAgent)&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file]});return}
- var u=URL.createObjectURL(blob),an=document.createElement("a");an.href=u;an.download=nm;document.body.appendChild(an);an.click();setTimeout(function(){URL.revokeObjectURL(u);an.remove()},4000)}
+function fname(){
+ // نفس صيغة التاريخ الأصلية YYYY-MM-DD، مع تغيير اسم الملف فقط.
+ var raw=(S.d1||"").trim(),d;
+ if(/^\d{4}-\d{2}-\d{2}$/.test(raw)){
+  var a=raw.split("-");d=new Date(Number(a[0]),Number(a[1])-1,Number(a[2]));
+ }else if(/^\d{2}\/\d{2}\/\d{4}$/.test(raw)){
+  var b=raw.split("/");d=new Date(Number(b[2]),Number(b[1])-1,Number(b[0]));
+ }else d=new Date();
+ if(isNaN(d.getTime()))d=new Date();
+ var yyyy=d.getFullYear();
+ var mm=("0"+(d.getMonth()+1)).slice(-2);
+ var dd=("0"+d.getDate()).slice(-2);
+ return "Preparation et Compte rendu_"+yyyy+"-"+mm+"-"+dd+".docx";
+}
+async function outFile(blob,nm){
+ // تنزيل مباشر من المتصفح لتفادي خطأ Library file not found.
+ var u=URL.createObjectURL(blob),an=document.createElement("a");
+ an.href=u;an.download=nm;an.style.display="none";document.body.appendChild(an);
+ an.click();
+ setTimeout(function(){URL.revokeObjectURL(u);an.remove()},10000);
+}
 async function saveDoc(){
  msg("");
  try{
@@ -487,8 +679,63 @@ async function viewDoc(){
  }catch(e){c.innerHTML='<p style="color:#fff;padding:16px">'+esc((e&&e.message)||e)+'</p>'}
 }
 function closeView(){layerClose("view")}
-load();fill();
-if("serviceWorker" in navigator&&/^https?:/.test(location.protocol))window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})});
+// تسجيل Service Worker مع تحديث تلقائي لنسخة التطبيق المنشورة على GitHub Pages.
+(function(){
+ if(!("serviceWorker" in navigator)) return;
+ var hadController = !!navigator.serviceWorker.controller;
+ var reloading = false;
+ navigator.serviceWorker.addEventListener("controllerchange", function(){
+  // لا نعيد تحميل الصفحة عند أول تثبيت؛ نعيدها فقط عند انتقالها إلى نسخة محدثة.
+  if(hadController && !reloading){
+   reloading = true;
+   window.location.reload();
+  }
+ });
+ window.addEventListener("load", function(){
+  navigator.serviceWorker.register("./sw.js", {scope:"./", updateViaCache:"none"})
+   .then(function(reg){
+    // تحقق من وجود نسخة جديدة عند فتح التطبيق، ثم عند عودة التطبيق للواجهة.
+    reg.update().catch(function(){});
+    document.addEventListener("visibilitychange", function(){
+     if(document.visibilityState === "visible") reg.update().catch(function(){});
+    });
+    window.addEventListener("focus", function(){ reg.update().catch(function(){}); });
+    // إذا كانت هناك نسخة تنتظر التفعيل، فعّلها فوراً.
+    if(reg.waiting) reg.waiting.postMessage({type:"SKIP_WAITING"});
+    reg.addEventListener("updatefound", function(){
+     var worker = reg.installing;
+     if(!worker) return;
+     worker.addEventListener("statechange", function(){
+      if(worker.state === "installed" && navigator.serviceWorker.controller){
+       worker.postMessage({type:"SKIP_WAITING"});
+      }
+     });
+    });
+   })
+   .catch(function(err){ console.warn("CRTE update registration failed", err); });
+ });
+})();
+(async function(){
+ try{
+  await load();
+  fill();
+  // لا نبدأ أي حفظ قبل اكتمال استرجاع النسخة الأحدث.
+  save();
+ }catch(bootError){
+ console.error("CRTE startup error",bootError);
+ var root=document.body;
+ if(root){
+  var panel=document.createElement("div");
+  panel.dir="rtl";
+  panel.style.cssText="margin:16px;padding:18px;border:1px solid #d97706;border-radius:12px;background:#fff7ed;color:#7c2d12;font:16px sans-serif;line-height:1.8";
+  panel.textContent="تعذر تشغيل جزء من واجهة CRTE. لم يتم حذف البيانات المحفوظة. السبب التقني: "+String((bootError&&bootError.message)||bootError)+". حدّث الصفحة أو أرسل هذه الرسالة للدعم.";
+  root.insertBefore(panel,root.firstChild);
+ }
+}
+})(); 
+// استرجاع تلقائي إذا كان التطبيق عاد من الخلفية.
+document.addEventListener("resume",function(){try{if(!S)load();fill();}catch(e){console.error(e);}});
+window.addEventListener("pageshow",function(){try{if(S)save();}catch(e){}});
 (function(){var box=$("pwaBox"),ev=null;
  box.innerHTML='<h3>التثبيت</h3><button class="p w" id="ib" hidden>📲 تثبيت التطبيق</button><p class="hint" id="il"></p><p class="hint" dir="ltr" id="iu"></p>';
  $("iu").textContent=location.href;
