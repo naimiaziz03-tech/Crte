@@ -189,16 +189,19 @@ var curDoc="crte";
 var KEY="crte_d554_v6";
 var NAMES=["NAIMI Aziz","JAGHMOUM Jaouad","MORHLI Mouad"];
 function today(){var d=new Date();return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2)}
-function defs(){return{d1:today(),d2:today(),h1:"",h2:"",crte:"",poste:"",objet:"",obs:"",autre:"",extras:[],pk:[true,true,true],auto:"",resp:0,plan:[{t:"",on:true},{t:"",on:true}],act:"",
+function defs(){return{d1:today(),d2:today(),dAuto:true,h1:"",h2:"",crte:"",poste:"",objet:"",obs:"",autre:"",extras:[],pk:[true,true,true],auto:"",resp:0,plan:[{t:"",on:true},{t:"",on:true}],act:"",
  tasks:[]}}
 var S;
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
-function load(){S=null;try{var r=sessionStorage.getItem(KEY);S=r?JSON.parse(r):null}catch(e){S=null}
- if(!S||!S.tasks||!S.pk)S=defs();if(!Array.isArray(S.plan)||S.plan.length!==2||S.plan.some(function(o){return o&&o.on===undefined}))S.plan=[{t:"",on:true},{t:"",on:true}];if(!Array.isArray(S.extras)){S.extras=[];if(S.autre&&String(S.autre).trim())S.extras.push(String(S.autre).trim())}S.extras=S.extras.slice(0,3)}
-function save(){try{sessionStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function load(){S=null;try{var r=localStorage.getItem(KEY);S=r?JSON.parse(r):null}catch(e){S=null}
+ if(!S||!S.tasks||!S.pk)S=defs();if(!Array.isArray(S.plan)||S.plan.length!==2||S.plan.some(function(o){return o&&o.on===undefined}))S.plan=[{t:"",on:true},{t:"",on:true}];if(!Array.isArray(S.extras)){S.extras=[];if(S.autre&&String(S.autre).trim())S.extras.push(String(S.autre).trim())}S.extras=S.extras.slice(0,3);if(S.dAuto===true){S.d1=today();S.d2=today()}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 var F=["d1","d2","h1","h2","poste","objet","act"];
 $("d1").addEventListener("input",function(){var old=S.d1;if(!S.d2||S.d2===old){S.d2=this.value;$("d2").value=this.value}});
+$("d1").addEventListener("input",function(){S.dAuto=false});$("d2").addEventListener("input",function(){S.dAuto=false});
+window.addEventListener("pagehide",function(){save()});
+document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden")save()});
 F.forEach(function(k){$(k).addEventListener("input",function(){S[k]=this.value;save()})});
 function showObj(){$("objBox").hidden=!(S.poste&&S.poste.trim())}
 function fill(){F.forEach(function(k){$(k).value=S[k]||""});showObj();dTeam();dResp();dPlan();dTasks();rObj();dExtras()}
@@ -363,7 +366,7 @@ async function importFiles(list){var ok=0,bad=[];
    ok++}catch(e){bad.push(f.name+" ("+((e&&e.message)||e)+")")}}
  libSave();rList();pickedP="";rPost();rObj();
  $("imsg").textContent=(ok?"✅ تمت إضافة "+ok+" ملف إلى ملفات المرجعية\n":"")+(bad.length?"⚠️ لم تتم إضافة:\n"+bad.join("\n"):"")}
-function rList(){$("icount").textContent="ملفات المرجعية: "+LIB.length+" · الإصدار 23"}
+function rList(){$("icount").textContent="ملفات المرجعية: "+LIB.length+" · الإصدار 24"}
 var editing=null;
 function openLib(){editing=null;$("lib").hidden=false;rLib();layerOpen("lib",function(){$("lib").hidden=true;editing=null;rList();pickedP="";rPost();rObj()})}
 function libBack(){if(editing)layerClose("libedit");else layerClose("lib")}

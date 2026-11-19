@@ -1,5 +1,5 @@
 /* CRTE Service Worker — v22 */
-const CACHE_NAME = 'crte-v23';
+const CACHE_NAME = 'crte-v24';
 const CORE_FILES = ['./', './index.html'];
 const OPTIONAL_FILES = [
   './crte-app.webmanifest',
